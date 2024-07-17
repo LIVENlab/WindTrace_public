@@ -5,10 +5,9 @@ import bw2data as bd
 import bw2io as bi
 from geopy.distance import geodesic
 import random
-from typing import Dict, List, Literal, Tuple, Union
+from typing import Dict, List, Literal, Tuple
 from stats_arrays import NormalUncertainty
 from statistics import linear_regression
-import os
 import sys
 from consts import (MATERIALS_EI391_ACTIVITY_CODES, EOL_S1_EI391_ACTIVITY_CODES,
                     MATERIAL_PROCESSING_EI391_ACTIVITY_CODES, MANUFACTURER_LOC, steel_data_EU27, secondary_steel)
@@ -28,7 +27,7 @@ cutoff391 = bd.Database("cutoff391")
 if 'new_db' not in bd.databases:
     new_db = bd.Database('new_db')
     new_db.register()
-new_db = bd.Database('new_db')
+new_db = bd.Database('examples_ciemat')
 biosphere3 = bd.Database('biosphere3')
 
 
@@ -487,12 +486,17 @@ def manipulate_steel_activities(commissioning_year: int, recycled_share: float =
                   'does not have data from the steel industry. '
                   'We recommend you to specify an expected recycling rate if you have an estimation. '
                   'Otherwise, 41.6% of recycled steel will be considered by default.')
+            print('Steel recycling share: ' + str(secondary_steel[str(commissioning_year)]))
         else:
             print('WARNING. This wind turbine was commissioned before 2012, for which WindTrace '
                   'does not have data from the steel industry. We recommend you to specify an expected recycling rate '
                   'if you have an estimation. Otherwise, 41.6% of recycled steel will be considered by default.')
+            print('Steel recycling share: ' + str(secondary_steel[str(commissioning_year)]))
 
     if recycled_share is None and electricity_mix is None:
+        print('WARNING. You did not select any electricity_mix. '
+              'The mean shares by country applied in the steel industry between 2017 and 2021 will be used')
+        print('Steel recycling share: ' + str(secondary_steel[str(commissioning_year)]))
         act_name = "market for steel, low-alloyed, " + str(commissioning_year - 1)
         code_name = "steel, " + str(commissioning_year - 1)
         try:
