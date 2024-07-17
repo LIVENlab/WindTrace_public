@@ -1506,6 +1506,41 @@ def excavation_activities(generator_type: List[Literal['dd_eesg', 'dd_pmsg', 'gb
         installation_ex.save()
 
 
+def electricity_production(park_name: str, park_power: float,
+                           cf: float, time_adjusted_cf: float):
+    # Finds park activity to extract lifetime and turbine power (saved in comments).
+    try:
+        real_park_activity = new_db.get(park_name + '_' + str(park_power))
+        lifetime = int(real_park_activity._data['comment'].split('=')[1].split(',')[0])
+        turbine_power = float(real_park_activity._data['comment'].split('=')[-1])
+    except bd.errors.UnknownObject:
+        print('There is no inventory created with the park name you specified. '
+              'Please, make sure you entered the right park name, or use the function lci_wind_turbine to create a '
+              'wind park inventory with this name.')
+        sys.exit()
+
+    if time_adjusted_cf == 0:
+        print('Constant cf (time-adjusted cf not applied)')
+        elec_prod_turbine = cf * lifetime * 365 * 24 * turbine_power / 1000
+        elec_prod_park = cf * lifetime * 365 * 24 * park_power / 1000
+    else:
+        # adjust a decay in yearly production according to CFage = CF2 * (1-time_adjusted_cf)^age [Xu et al. (2023)]
+        print('Time-adjusted cf applied with an attrition coefficient of ' + str(time_adjusted_cf))
+        year = 1
+        adjusted_time = []
+        while year <= lifetime:
+            if year == 1:
+                yearly_adjusted_time = 1
+            else:
+                yearly_adjusted_time = (1 - time_adjusted_cf) ** year
+            adjusted_time.append(yearly_adjusted_time)
+            year += 1
+        adjusted_time = sum(adjusted_time)
+        elec_prod_turbine = cf * 365 * 24 * turbine_power * adjusted_time * 1000
+        elec_prod_park = cf * 365 * 24 * park_power * adjusted_time * 1000
+
+    return elec_prod_turbine, elec_prod_park
+
 def lci_wind_turbine(park_name: str, park_power: float, number_of_turbines: int, park_location: str,
                      park_coordinates: tuple, manufacturer: str, rotor_diameter: int,
                      turbine_power: float, hub_height: float, commissioning_year: int, generator_type: str = 'gb_dfig',
@@ -1513,11 +1548,13 @@ def lci_wind_turbine(park_name: str, park_power: float, number_of_turbines: int,
                      electricity_mix_steel: List[Literal['Norway', 'Europe', 'Poland']] = None,
                      lifetime: int = 20, land_use_permanent_intensity: int = 3000, land_cover_type: str = None,
                      eol_scenario: int = 1,
+                     cf: float = 0.24, time_adjusted_cf: float = 0.009,
                      include_life_cycle_stages: bool = True,
                      eol: bool = True, transportation: bool = True,
                      use_and_maintenance: bool = True, installation: bool = True):
     """
-    It creates the life-cycle inventories and store them as activities in the database new_db.
+    It creates the life-cycle inventories per unit (turbine and wind park) and per kwh (also turbine and wind park)
+    and store them as activities in the database new_db.
     It is possible to run only specific stages of the life-cycle, by setting them to True or False in the parameters.
     By default, lifetime set to 20 years.
     By default, the land cover is chosen randomly according to probability. It can be manually selected
@@ -1527,6 +1564,7 @@ def lci_wind_turbine(park_name: str, park_power: float, number_of_turbines: int,
     in the turbine and the type of electricity mix used in the steel production. By default, the values are set to None,
     and the recycling share and electricity_mix is set automatically according to historic data from the steel industry
     (Eurofer).
+    By default, cf is 0.24 (European mean in 2023) and time_adjusted_cf is 0.009 (Xu et al. 2023)
     By default, all the stages are included (set to True).
     By default, include_life_cycle_stages = True, that means that a new activity is created for each stage. In case
     this is set to False, all the inputs would be added to the single_turbine activity. Important note: if this is set
@@ -1580,6 +1618,55 @@ def lci_wind_turbine(park_name: str, park_power: float, number_of_turbines: int,
         end_of_life(scenario=eol_scenario, park_name=park_name, generator_type=generator_type,
                     turbine_power=turbine_power,
                     hub_height=hub_height, include_life_cycle_stages=include_life_cycle_stages)
+
+    # Create electricity_production activity per turbine and per park (per kWh)
+    try:
+        # turbine
+        if time_adjusted_cf != 0:
+            cf_comment = 'CF: ' + str(cf) + '. Attrition rate: ' + str(time_adjusted_cf)
+        else:
+            cf_comment = 'CF: ' + str(cf) + '. Constant CF (no attrition rate)'
+        elec_prod_turbine_act = new_db.new_activity(name=park_name + '_turbine_kwh', code=park_name + '_turbine_kwh',
+                                                    location=park_location, unit='kilowatt hour', comment=cf_comment)
+        elec_prod_turbine_act.save()
+        new_exc = elec_prod_turbine_act.new_exchange(input=elec_prod_turbine_act.key, amount=1.0, unit='kilowatt hour',
+                                                     type='production')
+        new_exc.save()
+        # park
+        elec_prod_park_act = new_db.new_activity(name=park_name + '_park_kwh', code=park_name + '_park_kwh',
+                                                 location=park_location, unit='kilowatt hour', comment=cf_comment)
+        elec_prod_park_act.save()
+        new_exc = elec_prod_park_act.new_exchange(input=elec_prod_park_act.key, amount=1.0, unit='kilowatt hour',
+                                                  type='production')
+        new_exc.save()
+    except bd.errors.DuplicateNode:
+        print(
+            'An inventory for a park with the name ' + '"' + park_name + '"' + ' was already created before in the database ')
+        print('"new_db". You may want to think about giving '
+              'another name to the wind park you are trying to '
+              'analyse. Otherwise, you may want to delete '
+              'the content of "new_db" by runing delete_new_db().')
+        print(
+            'WARNING: if you run delete_new_db() '
+            'ALL WIND PARKS STORED IN THAT DATABASE WILL '
+            'BE DELETED!')
+        sys.exit()
+    # add infrastructure
+    elec_turbine, elec_park = electricity_production(park_name=park_name, park_power=park_power,
+                                                     cf=cf, time_adjusted_cf=time_adjusted_cf)
+    # to turbine activity
+    turbine_amount = 1 / elec_turbine
+    turbine_act = new_db.get(park_name + '_single_turbine')
+    new_exc = elec_prod_turbine_act.new_exchange(input=turbine_act, amount=turbine_amount, type='technosphere')
+    new_exc.save()
+    elec_prod_turbine_act.save()
+    # to park activity
+    park_amount = 1 / elec_park
+    park_act = new_db.get(park_name + '_' + str(park_power))
+    new_exc = elec_prod_park_act.new_exchange(input=park_act, amount=park_amount, type='technosphere')
+    new_exc.save()
+    elec_prod_park_act.save()
+
     if installation:
         return mass_materials_park, trans, occ
     else:
@@ -1590,22 +1677,17 @@ def lci_wind_turbine(park_name: str, park_power: float, number_of_turbines: int,
 def lca_wind_turbine(park_name: str, park_power: float,
                      method: str = 'ReCiPe 2016 v1.03, midpoint (H)',
                      indicators: List[Tuple[str, str, str]] = [],
-                     cf: float = 0.24,
-                     time_adjusted_cf: float = 0.009,
                      turbine: bool = True):
     """
     Based on LCIs previously built with the function lci_wind_turbine, it creates a dictionary (total_park_results)
     with the lca score results of the total park. The dictionary follows this structure:
     total_park_results = {'method_1': park_score,
                           'method_2': park_score}
-    Default CF of 0.24. European onshore mean (WindEurope - Wind energy in Europe 2022 Report)
     Default turbine=True, it means that we calculate the impacts for the FU = 1 turbine.
     In case of wanting the impacts from the park: set turbine=False.
-    To calculate the total energy produced by a turbine, we take the lifetime from the 'comments'
-    of the wind park activity, where it has been previously stored
     """
-    total_park_results = {}
-    park_results_kwh = {}
+    results = {}
+    results_kwh = {}
 
     # setting the methods
     if indicators:
@@ -1620,10 +1702,9 @@ def lca_wind_turbine(park_name: str, park_power: float,
         else:
             print('LCIA methods: ' + str(method))
         try:
-            park_act = new_db.get(park_name + '_single_turbine')
-            real_park_activity = new_db.get(park_name + '_' + str(park_power))
-            lifetime = int(real_park_activity._data['comment'].split('=')[1].split(',')[0])
-            turbine_power = float(real_park_activity._data['comment'].split('=')[-1])
+            act = new_db.get(park_name + '_single_turbine')
+            act_kwh = new_db.get(park_name + '_turbine_kwh')
+            print(act_kwh._data['comment'])
         except bd.errors.UnknownObject:
             print('There is no inventory created with the park name you specified. '
                   'Please, make sure you entered the right park name, or use the function lci_wind_turbine to create a '
@@ -1636,52 +1717,29 @@ def lca_wind_turbine(park_name: str, park_power: float,
         else:
             print('LCIA methods: ' + str(method))
         try:
-            park_act = new_db.get(park_name + '_' + str(park_power))
-            lifetime = int(park_act._data['comment'].split('=')[1].split(',')[0])
+            act = new_db.get(park_name + '_' + str(park_power))
+            act_kwh = new_db.get(park_name + '_park_kwh')
+            print(act_kwh._data['comment'])
         except bd.errors.UnknownObject:
             print('There is no inventory created with the park name you specified. '
                   'Please, make sure you entered the right park name, or use the function lci_wind_turbine to create a '
                   'wind park inventory with this name.')
             sys.exit()
 
-    lca_obj = park_act.lca(amount=1)
+    # per unit
+    lca_obj = act.lca(amount=1)
     for m in methods:
         lca_obj.switch_method(m)
         lca_obj.lcia()
-        total_park_results[m[1]] = lca_obj.score
-    if cf:
-        if time_adjusted_cf == 0:
-            print('Constant cf (time-adjusted cf not applied)')
-            for indicator, score in total_park_results.items():
-                if turbine:
-                    value = score / (cf * lifetime * 365 * 24 * turbine_power) / 1000
-                    park_results_kwh[indicator] = value
-                else:
-                    value = score / (
-                                cf * lifetime * 365 * 24 * park_power) / 1000  # /1000 to convert it from MWh into kWh
-                    park_results_kwh[indicator] = value
-        else:
-            # adjust a decay in yearly production according to CFage = CF2 * (1-time_adjusted_cf)^age [Xu et al. (2023)]
-            print('Time-adjusted cf applied with an attrition coefficient of ' + str(time_adjusted_cf))
-            year = 1
-            adjusted_time = []
-            while year <= lifetime:
-                if year == 1:
-                    yearly_adjusted_time = 1
-                else:
-                    yearly_adjusted_time = (1 - time_adjusted_cf) ** year
-                adjusted_time.append(yearly_adjusted_time)
-                year += 1
-            adjusted_time = sum(adjusted_time)
-            if turbine:
-                production = cf * 365 * 24 * turbine_power * adjusted_time * 1000
-            else:
-                production = cf * 365 * 24 * park_power * adjusted_time * 1000
-            for indicator, score in total_park_results.items():
-                value = score / production
-                park_results_kwh[indicator] = value
+        results[m[1]] = lca_obj.score
+    # per kwh
+    lca_obj = act_kwh.lca(amount=1)
+    for m in methods:
+        lca_obj.switch_method(m)
+        lca_obj.lcia()
+        results_kwh[m[1]] = lca_obj.score
 
-    return total_park_results, park_results_kwh
+    return results, results_kwh
 
 
 def delete_new_db():
