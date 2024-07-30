@@ -9,8 +9,7 @@ from typing import Optional, List, Literal, Tuple
 from stats_arrays import NormalUncertainty
 from statistics import linear_regression
 import sys
-from consts import (MATERIALS_EI391_ACTIVITY_CODES, EOL_S1_EI391_ACTIVITY_CODES,
-                    MATERIAL_PROCESSING_EI391_ACTIVITY_CODES, MANUFACTURER_LOC, steel_data_EU27, secondary_steel)
+import consts
 
 # Vestas file. INSERT HERE THE ROUTE OF THE clean_data.xlsx file.
 VESTAS_FILE = r'C:\Users\1361185\PycharmProjects\lci_wind_model\clean_data.xlsx'
@@ -433,7 +432,8 @@ def mva500_transformer():
 
 
 def manipulate_steel_activities(commissioning_year: int, recycled_share: float = None,
-                                electricity_mix: Optional[Literal['Europe', 'Poland', 'Norway']] = None):
+                                electricity_mix: Optional[Literal['Europe', 'Poland', 'Norway']] = None,
+                                printed_warning: bool = False):
     """
     This function creates a copy of the secondary and primary steel production activities in Ecoinvent
     and adapts the location of its electricity and gas inputs. The adaptation is made according to the share of steel
@@ -451,7 +451,7 @@ def manipulate_steel_activities(commissioning_year: int, recycled_share: float =
     is applied by default.
     """
     # test if the input variables are correct or not
-    if recycled_share is not None:
+    if recycled_share is not None and not printed_warning:
         if recycled_share > 1 or recycled_share < 0:
             print('WARNING. The recycling share must be inputed with values from 0 to 1.')
             sys.exit()
@@ -463,7 +463,8 @@ def manipulate_steel_activities(commissioning_year: int, recycled_share: float =
                                                        'variable. You can only use "Poland", '
                                                        '"Norway" or "Europe". A European electricity mix will '
                                                        'be applied by default!!')
-    if str(commissioning_year) not in list(secondary_steel.keys()) and recycled_share is None:
+    if str(commissioning_year) not in list(
+            consts.secondary_steel.keys()) and recycled_share is None and not printed_warning:
         if commissioning_year > 2021:
             print('WARNING. This wind turbine was commissioned after 2021 for which WindTrace '
                   'does not have data from the steel industry. '
@@ -472,14 +473,16 @@ def manipulate_steel_activities(commissioning_year: int, recycled_share: float =
             print('Steel recycling share: 41.6%')
         elif commissioning_year < 2012:
             print('WARNING. This wind turbine was commissioned before 2012, for which WindTrace '
-                  'does not have data from the steel industry. We recommend you to specify an expected recycling rate '
-                  'if you have an estimation. Otherwise, 41.6% of recycled steel will be considered by default.')
+                  'does not have data from the steel industry. We recommend you to specify an expected recycling '
+                  'rate if you have an estimation. Otherwise, 41.6% of recycled steel will be considered by '
+                  'default.')
             print('Steel recycling share: 41.6%')
 
     if recycled_share is None and electricity_mix is None:
-        print('WARNING. You did not select any electricity_mix. '
-              'The mean shares by country applied in the steel industry between 2017 and 2021 will be used')
-        print('Electricity mix: European mix provided by Eurofer')
+        if not printed_warning:
+            print('WARNING. You did not select any electricity_mix. '
+                  'The mean shares by country applied in the steel industry between 2017 and 2021 will be used')
+            print('Electricity mix: European mix provided by Eurofer')
         act_name = "market for steel, low-alloyed, " + str(commissioning_year - 1)
         code_name = "steel, " + str(commissioning_year - 1)
         try:
@@ -533,11 +536,11 @@ def manipulate_steel_activities(commissioning_year: int, recycled_share: float =
             # Add new exchanges with adjusted location. The total amount of gas and electricity inputs are maintained
             # from the original Ecoinvent activity. The only main change is the share of each country.
             if electricity_mix is None:
-                for country in steel_data_EU27.keys():
-                    elect_act = cutoff391.get(code=steel_data_EU27[country]['elect_code'])
-                    gas_act = cutoff391.get(code=steel_data_EU27[country]['gas_code'])
-                    elect_amount = total_elect_amount * steel_data_EU27[country]['share'] / 100
-                    gas_amount = total_gas_amount * steel_data_EU27[country]['share'] / 100
+                for country in consts.steel_data_EU27.keys():
+                    elect_act = cutoff391.get(code=consts.steel_data_EU27[country]['elect_code'])
+                    gas_act = cutoff391.get(code=consts.steel_data_EU27[country]['gas_code'])
+                    elect_amount = total_elect_amount * consts.steel_data_EU27[country]['share'] / 100
+                    gas_amount = total_gas_amount * consts.steel_data_EU27[country]['share'] / 100
                     new_elect_ex = act.new_exchange(input=elect_act, amount=elect_amount, unit='kilowatt hour',
                                                     type='technosphere')
                     new_gas_ex = act.new_exchange(input=gas_act, amount=gas_amount, unit='cubic meter',
@@ -546,9 +549,9 @@ def manipulate_steel_activities(commissioning_year: int, recycled_share: float =
                     new_gas_ex.save()
             else:
                 # gas is always changed independently of the electricity mix chosen
-                for country in steel_data_EU27.keys():
-                    gas_act = cutoff391.get(code=steel_data_EU27[country]['gas_code'])
-                    gas_amount = total_gas_amount * steel_data_EU27[country]['share'] / 100
+                for country in consts.steel_data_EU27.keys():
+                    gas_act = cutoff391.get(code=consts.steel_data_EU27[country]['gas_code'])
+                    gas_amount = total_gas_amount * consts.steel_data_EU27[country]['share'] / 100
                     new_gas_ex = act.new_exchange(input=gas_act, amount=gas_amount, unit='cubic meter',
                                                   type='technosphere')
                     new_gas_ex.save()
@@ -625,7 +628,7 @@ def manipulate_steel_activities(commissioning_year: int, recycled_share: float =
                     new_elect_ex = ch_steel_act.new_exchange(input=electricity_europe, amount=total_elect_amount,
                                                              unit='kilowatt hour', type='technosphere')
                     new_elect_ex.save()
-                # if the electricity_mix variable inputed is not in the list ('Europe', 'Norway' or 'Poland'),
+                # if the electricity_mix variable inputted is not in the list ('Europe', 'Norway' or 'Poland'),
                 # Europe is chosen by default
                 else:
                     electricity_europe = [a for a in cutoff391 if
@@ -656,12 +659,12 @@ def manipulate_steel_activities(commissioning_year: int, recycled_share: float =
         # Add exchanges with the annual share of primary a secondary steel to the recently created activity
         # Historic primary and secondary shares according to Eurofer data.
         if recycled_share is None:
-            if str(commissioning_year - 1) in secondary_steel.keys():
+            if str(commissioning_year - 1) in consts.secondary_steel.keys():
                 # We assume that the turbine was manufactured a year before the commissioning date
-                secondary_amount = secondary_steel[str(commissioning_year - 1)]
+                secondary_amount = consts.secondary_steel[str(commissioning_year - 1)]
                 primary_amount = 1 - secondary_amount
             else:
-                secondary_amount = secondary_steel['other']
+                secondary_amount = consts.secondary_steel['other']
                 primary_amount = 1 - secondary_amount
             # Add primary steel
             primary_ex = steel_market.new_exchange(input=primary_act, amount=primary_amount, unit='kilogram',
@@ -809,14 +812,16 @@ def lci_materials(park_name: str, park_power: float, number_of_turbines: int, pa
     mass_materials, material_polyfits = materials_mass(generator_type, turbine_power, hub_height)
     for material in mass_materials.keys():
         if any(element in material for element in ['Praseodymium', 'Neodymium', 'Dysprosium', 'Terbium', 'Boron']):
-            inp = cutoff391.get(code=MATERIALS_EI391_ACTIVITY_CODES[material]['code'])
+            inp = cutoff391.get(code=consts.MATERIALS_EI391_ACTIVITY_CODES[material]['code'])
             ex = materials_activity.new_exchange(input=inp, type='technosphere', amount=mass_materials[material])
             ex.save()
             materials_activity.save()
         elif any(element in material for element in ['Low alloy steel', 'Low alloy steel_foundations']):
             inp, ch = manipulate_steel_activities(commissioning_year=commissioning_year,
                                                   recycled_share=recycled_share_steel,
-                                                  electricity_mix=electricity_mix_steel)
+                                                  electricity_mix=electricity_mix_steel,
+                                                  printed_warning=consts.PRINTED_WARNING_STEEL)
+            consts.PRINTED_WARNING_STEEL = True
             ex = materials_activity.new_exchange(input=inp, type='technosphere', amount=mass_materials[material])
             # Uncertainty added as the standard deviation of the residuals
             ex['uncertainty type'] = NormalUncertainty.id
@@ -829,11 +834,12 @@ def lci_materials(park_name: str, park_power: float, number_of_turbines: int, pa
               and electricity_mix_steel is not None):
             steel, ch = manipulate_steel_activities(commissioning_year=commissioning_year,
                                                     recycled_share=recycled_share_steel,
-                                                    electricity_mix=electricity_mix_steel)
+                                                    electricity_mix=electricity_mix_steel,
+                                                    printed_warning=consts.PRINTED_WARNING_STEEL)
             if ch:
                 inp = ch[0]
             else:
-                inp = MATERIALS_EI391_ACTIVITY_CODES[material]['code']
+                inp = cutoff391.get(consts.MATERIALS_EI391_ACTIVITY_CODES[material]['code'])
             ex = materials_activity.new_exchange(input=inp, type='technosphere', amount=mass_materials[material])
             # Uncertainty added as the standard deviation of the residuals
             ex['uncertainty type'] = NormalUncertainty.id
@@ -843,7 +849,7 @@ def lci_materials(park_name: str, park_power: float, number_of_turbines: int, pa
             ex.save()
             materials_activity.save()
         elif material == 'Fiberglass':
-            inp = cutoff391.get(code=MATERIALS_EI391_ACTIVITY_CODES[material]['code'])
+            inp = cutoff391.get(code=consts.MATERIALS_EI391_ACTIVITY_CODES[material]['code'])
             # Mass includes 10% of waste produced in the manufacturing (Psomopoulos et al. 2019)
             ex = materials_activity.new_exchange(input=inp, type='technosphere', amount=mass_materials[material] * 1.1)
             # Uncertainty added as the standard deviation of the residuals
@@ -854,7 +860,7 @@ def lci_materials(park_name: str, park_power: float, number_of_turbines: int, pa
             ex.save()
             materials_activity.save()
         elif material == 'Concrete_foundations':
-            inp = cutoff391.get(code=MATERIALS_EI391_ACTIVITY_CODES[material]['code'])
+            inp = cutoff391.get(code=consts.MATERIALS_EI391_ACTIVITY_CODES[material]['code'])
             ex = materials_activity.new_exchange(input=inp, type='technosphere', amount=mass_materials[material])
             # Uncertainty added as the standard deviation of the residuals
             ex['uncertainty type'] = NormalUncertainty.id
@@ -864,7 +870,7 @@ def lci_materials(park_name: str, park_power: float, number_of_turbines: int, pa
             ex.save()
             materials_activity.save()
         else:
-            inp = cutoff391.get(code=MATERIALS_EI391_ACTIVITY_CODES[material]['code'])
+            inp = cutoff391.get(code=consts.MATERIALS_EI391_ACTIVITY_CODES[material]['code'])
             ex = materials_activity.new_exchange(input=inp, type='technosphere', amount=mass_materials[material])
             # Uncertainty added as the standard deviation of the residuals
             ex['uncertainty type'] = NormalUncertainty.id
@@ -880,12 +886,12 @@ def lci_materials(park_name: str, park_power: float, number_of_turbines: int, pa
     for material in processing_materials_list:
         if material == 'Low alloy steel':
             # section bar rolling
-            inp = cutoff391.get(code=MATERIAL_PROCESSING_EI391_ACTIVITY_CODES['Steel_tower_rolling']['code'])
+            inp = cutoff391.get(code=consts.MATERIAL_PROCESSING_EI391_ACTIVITY_CODES['Steel_tower_rolling']['code'])
             ex = manufacturing_activity.new_exchange(input=inp, type='technosphere', amount=mass_materials[material])
             ex.save()
             manufacturing_activity.save()
             # welding
-            inp = cutoff391.get(code=MATERIAL_PROCESSING_EI391_ACTIVITY_CODES['Steel_tower_welding']['code'])
+            inp = cutoff391.get(code=consts.MATERIAL_PROCESSING_EI391_ACTIVITY_CODES['Steel_tower_welding']['code'])
             ex = manufacturing_activity.new_exchange(input=inp, type='technosphere', amount=hub_height * 2)
             ex.save()
             manufacturing_activity.save()
@@ -900,23 +906,23 @@ def lci_materials(park_name: str, park_power: float, number_of_turbines: int, pa
             perimeter = np.pi * outer_diameter
             tower_surface_area = perimeter * hub_height
             # create exchange
-            inp = cutoff391.get(code=MATERIAL_PROCESSING_EI391_ACTIVITY_CODES['Zinc coating']['code'])
+            inp = cutoff391.get(code=consts.MATERIAL_PROCESSING_EI391_ACTIVITY_CODES['Zinc coating']['code'])
             ex = manufacturing_activity.new_exchange(input=inp, type='technosphere', amount=tower_surface_area)
             ex.save()
             manufacturing_activity.save()
         elif 'foundations' in material and 'alloy' not in material:
             material_name = material[:material.index('_')]
-            inp = cutoff391.get(code=MATERIAL_PROCESSING_EI391_ACTIVITY_CODES[material_name]['code'])
+            inp = cutoff391.get(code=consts.MATERIAL_PROCESSING_EI391_ACTIVITY_CODES[material_name]['code'])
             ex = manufacturing_activity.new_exchange(input=inp, type='technosphere', amount=mass_materials[material])
             ex.save()
             manufacturing_activity.save()
         elif 'foundations' in material and 'alloy' in material:
-            inp = cutoff391.get(code=MATERIAL_PROCESSING_EI391_ACTIVITY_CODES['Steel_tower_rolling']['code'])
+            inp = cutoff391.get(code=consts.MATERIAL_PROCESSING_EI391_ACTIVITY_CODES['Steel_tower_rolling']['code'])
             ex = manufacturing_activity.new_exchange(input=inp, type='technosphere', amount=mass_materials[material])
             ex.save()
             manufacturing_activity.save()
         else:
-            inp = cutoff391.get(code=MATERIAL_PROCESSING_EI391_ACTIVITY_CODES[material]['code'])
+            inp = cutoff391.get(code=consts.MATERIAL_PROCESSING_EI391_ACTIVITY_CODES[material]['code'])
             ex = manufacturing_activity.new_exchange(input=inp, type='technosphere', amount=mass_materials[material])
             ex.save()
             manufacturing_activity.save()
@@ -932,12 +938,12 @@ def lci_materials(park_name: str, park_power: float, number_of_turbines: int, pa
     if manufacturer is None or manufacturer not in ['Vestas', 'Siemens Gamesa', 'Nordex', 'Enercon', 'LM Wind']:
         print(manufacturer, 'is not an allowed value. We chose LM Wind by default instead')
         manufacturer = 'LM Wind'
-    for location_id in MANUFACTURER_LOC[manufacturer]:
-        location = MANUFACTURER_LOC[manufacturer][location_id]['location']
+    for location_id in consts.MANUFACTURER_LOC[manufacturer]:
+        location = consts.MANUFACTURER_LOC[manufacturer][location_id]['location']
         distance = geodesic(park_coordinates, location).kilometers
         distance_dict[distance] = location_id
     loc_id_min_distance = distance_dict[min(distance_dict.keys())]
-    closest_country = MANUFACTURER_LOC[manufacturer][loc_id_min_distance]['country']
+    closest_country = consts.MANUFACTURER_LOC[manufacturer][loc_id_min_distance]['country']
     inp = [a for a in cutoff391 if
            'market for electricity, low voltage' in a._data['name'] and closest_country in a._data['location']][0]
     ex = manufacturing_activity.new_exchange(input=inp, type='technosphere', amount=electricity_input)
@@ -947,7 +953,7 @@ def lci_materials(park_name: str, park_power: float, number_of_turbines: int, pa
     # add materials from the cables
     cable_mass = cabling_materials(turbine_power, rotor_diameter, number_of_turbines)
     for material in cable_mass.keys():
-        inp = cutoff391.get(code=MATERIALS_EI391_ACTIVITY_CODES[material]['code'])
+        inp = cutoff391.get(code=consts.MATERIALS_EI391_ACTIVITY_CODES[material]['code'])
         ex = cables_act.new_exchange(input=inp, type='technosphere', amount=cable_mass[material])
         ex.save()
 
@@ -956,12 +962,12 @@ def lci_materials(park_name: str, park_power: float, number_of_turbines: int, pa
     for material in processing_materials_list:
         if material == 'Aluminium_cables':
             # copper wire drawing
-            inp = cutoff391.get(code=MATERIAL_PROCESSING_EI391_ACTIVITY_CODES['Copper']['code'])
+            inp = cutoff391.get(code=consts.MATERIAL_PROCESSING_EI391_ACTIVITY_CODES['Copper']['code'])
             ex = cables_act.new_exchange(input=inp, type='technosphere', amount=cable_mass['Aluminium'])
             ex.save()
             cables_act.save()
         else:
-            inp = cutoff391.get(code=MATERIAL_PROCESSING_EI391_ACTIVITY_CODES[material]['code'])
+            inp = cutoff391.get(code=consts.MATERIAL_PROCESSING_EI391_ACTIVITY_CODES[material]['code'])
             ex = cables_act.new_exchange(input=inp, type='technosphere', amount=cable_mass[material])
             ex.save()
             cables_act.save()
@@ -1047,7 +1053,7 @@ def end_of_life(scenario: int, park_name: str,
             # scenario == 3
             else:
                 recycling_rate = 0.52
-            inp = cutoff391.get(code=EOL_S1_EI391_ACTIVITY_CODES[material]['landfill']['code'])
+            inp = cutoff391.get(code=consts.EOL_S1_EI391_ACTIVITY_CODES[material]['landfill']['code'])
             ex = eol_activity.new_exchange(input=inp, type='technosphere',
                                            amount=mass_materials[material] * (-(1 - recycling_rate)))
             ex.save()
@@ -1060,7 +1066,7 @@ def end_of_life(scenario: int, park_name: str,
             # scenario == 3
             else:
                 recycling_rate = 0.42
-            inp = cutoff391.get(code=EOL_S1_EI391_ACTIVITY_CODES[material]['landfill']['code'])
+            inp = cutoff391.get(code=consts.EOL_S1_EI391_ACTIVITY_CODES[material]['landfill']['code'])
             ex = eol_activity.new_exchange(input=inp, type='technosphere',
                                            amount=mass_materials[material] * (-(1 - recycling_rate)))
             ex.save()
@@ -1073,7 +1079,7 @@ def end_of_life(scenario: int, park_name: str,
             # secenario == 3
             else:
                 recycling_rate = 0.42
-            inp = cutoff391.get(code=EOL_S1_EI391_ACTIVITY_CODES[material]['landfill']['code'])
+            inp = cutoff391.get(code=consts.EOL_S1_EI391_ACTIVITY_CODES[material]['landfill']['code'])
             ex = eol_activity.new_exchange(input=inp, type='technosphere',
                                            amount=mass_materials[material] * (-(1 - recycling_rate)))
             ex.save()
@@ -1088,13 +1094,13 @@ def end_of_life(scenario: int, park_name: str,
             # scenario == 4
             else:
                 recycling_rate = 0.7
-            inp = cutoff391.get(code=EOL_S1_EI391_ACTIVITY_CODES[material]['landfill']['code'])
+            inp = cutoff391.get(code=consts.EOL_S1_EI391_ACTIVITY_CODES[material]['landfill']['code'])
             ex = eol_activity.new_exchange(input=inp, type='technosphere',
                                            amount=mass_materials[material] * (-(1 - recycling_rate)))
             ex.save()
             eol_activity.save()
         elif any(element in material for element in plastics):
-            inp = cutoff391.get(code=EOL_S1_EI391_ACTIVITY_CODES[material]['incineration']['code'])
+            inp = cutoff391.get(code=consts.EOL_S1_EI391_ACTIVITY_CODES[material]['incineration']['code'])
             ex = eol_activity.new_exchange(input=inp, type='technosphere', amount=mass_materials[material] * (-1))
             ex.save()
             eol_activity.save()
@@ -1102,17 +1108,17 @@ def end_of_life(scenario: int, park_name: str,
             # NOTE: 10% of glassfiber mass corresponds to the extra mass on the manufacturing process (i.e., waste)
             # and the waste is not accounted in here.
             if scenario == 4:
-                inp = cutoff391.get(code=EOL_S1_EI391_ACTIVITY_CODES[material]['incineration']['code'])
+                inp = cutoff391.get(code=consts.EOL_S1_EI391_ACTIVITY_CODES[material]['incineration']['code'])
                 ex = eol_activity.new_exchange(input=inp, type='technosphere', amount=mass_materials[material] * (-0.3))
                 ex.save()
                 eol_activity.save()
             else:
-                inp = cutoff391.get(code=EOL_S1_EI391_ACTIVITY_CODES[material]['incineration']['code'])
+                inp = cutoff391.get(code=consts.EOL_S1_EI391_ACTIVITY_CODES[material]['incineration']['code'])
                 ex = eol_activity.new_exchange(input=inp, type='technosphere', amount=mass_materials[material] * (-1))
                 ex.save()
                 eol_activity.save()
         elif any(element in material for element in ['Lubricating oil', 'Ethyleneglycol']):
-            inp = cutoff391.get(code=EOL_S1_EI391_ACTIVITY_CODES[material]['incineration']['code'])
+            inp = cutoff391.get(code=consts.EOL_S1_EI391_ACTIVITY_CODES[material]['incineration']['code'])
             ex = eol_activity.new_exchange(input=inp, type='technosphere', amount=mass_materials[material] * (-1))
             ex.save()
             eol_activity.save()
@@ -1120,25 +1126,25 @@ def end_of_life(scenario: int, park_name: str,
             # concrete modelled separatelly because the amount is in m3 and the landfill activity in kg
             # we use the density (2400 kg/m3)
             if scenario == 4:
-                inp = cutoff391.get(code=EOL_S1_EI391_ACTIVITY_CODES[material]['landfill']['code'])
+                inp = cutoff391.get(code=consts.EOL_S1_EI391_ACTIVITY_CODES[material]['landfill']['code'])
                 ex = eol_activity.new_exchange(input=inp, type='technosphere',
                                                amount=mass_materials[material] * (-2400 * 0.5))
                 ex.save()
                 eol_activity.save()
             else:
-                inp = cutoff391.get(code=EOL_S1_EI391_ACTIVITY_CODES[material]['landfill']['code'])
+                inp = cutoff391.get(code=consts.EOL_S1_EI391_ACTIVITY_CODES[material]['landfill']['code'])
                 ex = eol_activity.new_exchange(input=inp, type='technosphere',
                                                amount=mass_materials[material] * (-2400))
                 ex.save()
                 eol_activity.save()
         else:
             if scenario == 4:
-                inp = cutoff391.get(code=EOL_S1_EI391_ACTIVITY_CODES[material]['landfill']['code'])
+                inp = cutoff391.get(code=consts.EOL_S1_EI391_ACTIVITY_CODES[material]['landfill']['code'])
                 ex = eol_activity.new_exchange(input=inp, type='technosphere', amount=-mass_materials[material] * 0.5)
                 ex.save()
                 eol_activity.save()
             else:
-                inp = cutoff391.get(code=EOL_S1_EI391_ACTIVITY_CODES[material]['landfill']['code'])
+                inp = cutoff391.get(code=consts.EOL_S1_EI391_ACTIVITY_CODES[material]['landfill']['code'])
                 ex = eol_activity.new_exchange(input=inp, type='technosphere', amount=-mass_materials[material])
                 ex.save()
                 eol_activity.save()
@@ -1214,34 +1220,19 @@ def transport(manufacturer: Literal['Vestas', 'Siemens Gamesa', 'Nordex', 'ENERC
     """
     mat_mass, material_polyfits = materials_mass(generator_type, turbine_power, hub_height)
 
-    # tower_mass (steel), foundations_mass and other_materials_mass calculations
-    foundations_masses = []
-    others_masses = []
-    tower_mass = None
     for material in mat_mass.keys():
-        if '_foundations' in material:
-            foundations_masses.append(mat_mass[material])
-        elif 'Low alloy steel' in material:
-            tower_mass = mat_mass[material]
-        # change concrete value from volume to mass (density = 2.4 t/m3)
-        elif 'Concrete_foundations' in material:
-            others_masses.append(mat_mass[material] * 2.4)
+        if 'Concrete' in material:
+            foundations_amount = mat_mass[material] * 2.4 * 50
+        elif material == 'Low alloy steel':
+            steel_amount = mat_mass[material] / 1000 * 450
         else:
-            others_masses.append(mat_mass[material])
-
-    # Steel (tower) transport amount (in tkm)
-    steel_amount = tower_mass / 1000 * 450
-
-    # Foundations transport amount (in tkm)
-    foundations_amount = sum(foundations_masses) / 1000 * 50
-
-    # All other materials amount (in tkm)
-    distance_dict = {}
-    for location_id in MANUFACTURER_LOC[manufacturer]:
-        location = MANUFACTURER_LOC[manufacturer][location_id]['location']
-        distance = geodesic(park_coordinates, location).kilometers
-        distance_dict[distance] = location_id
-    others_amount = sum(others_masses) / 1000 * min(distance_dict.keys())
+            distance_dict = {}
+            for location_id in consts.MANUFACTURER_LOC[manufacturer]:
+                location = consts.MANUFACTURER_LOC[manufacturer][location_id]['location']
+                distance = geodesic(park_coordinates, location).kilometers
+                distance_dict[distance] = location_id
+            others_amount = (sum(mat_mass.values()) - mat_mass['Concrete_foundations']
+                             - mat_mass['Low alloy steel']) / 1000 * min(distance_dict.keys())
 
     truck_trans = cutoff391.get(name='market for transport, freight, lorry >32 metric ton, EURO6',
                                 code='508cc8b20d83e7b31af9848e1fb45815', location='RER')
@@ -1664,6 +1655,8 @@ def lci_wind_turbine(park_name: str, park_power: float, number_of_turbines: int,
     new_exc = elec_prod_park_act.new_exchange(input=park_act, amount=park_amount, type='technosphere')
     new_exc.save()
     elec_prod_park_act.save()
+
+    consts.PRINTED_WARNING_STEEL = False
 
     if installation:
         return mass_materials_park, trans, occ

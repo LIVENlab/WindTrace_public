@@ -214,3 +214,5 @@ steel_data_EU27 = {'AT': {'share': 4.98, 'elect_code': '6f61d8326ee98b75ab4136e8
 # Share of secondary steel production (electric furnace)
 secondary_steel = {'other': 0.4162, '2012': 0.4304, '2013': 0.4172, '2014': 0.4080, '2015': 0.4094,
                    '2016': 0.4058, '2017': 0.4135, '2018': 0.4240, '2019': 0.4191, '2020': 0.4365, '2021': 0.4360}
+
+PRINTED_WARNING_STEEL = False
