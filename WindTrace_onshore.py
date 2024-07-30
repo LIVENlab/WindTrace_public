@@ -5,7 +5,7 @@ import bw2data as bd
 import bw2io as bi
 from geopy.distance import geodesic
 import random
-from typing import Dict, List, Literal, Tuple
+from typing import Optional, List, Literal, Tuple
 from stats_arrays import NormalUncertainty
 from statistics import linear_regression
 import sys
@@ -13,7 +13,7 @@ from consts import (MATERIALS_EI391_ACTIVITY_CODES, EOL_S1_EI391_ACTIVITY_CODES,
                     MATERIAL_PROCESSING_EI391_ACTIVITY_CODES, MANUFACTURER_LOC, steel_data_EU27, secondary_steel)
 
 # Vestas file. INSERT HERE THE ROUTE OF THE clean_data.xlsx file.
-vestas_file = r'C:\Users\1361185\PycharmProjects\lci_wind_model\clean_data.xlsx'
+VESTAS_FILE = r'C:\Users\1361185\PycharmProjects\lci_wind_model\clean_data.xlsx'
 
 # create a bw25 project, import ecoinvent v.3.9.1 and create an empty database 'new_db'
 bd.projects.set_current("lci_model")
@@ -27,22 +27,23 @@ cutoff391 = bd.Database("cutoff391")
 if 'new_db' not in bd.databases:
     new_db = bd.Database('new_db')
     new_db.register()
-new_db = bd.Database('examples_ciemat')
+new_db = bd.Database('new_db')
 biosphere3 = bd.Database('biosphere3')
 
 
 def steel_turbine(plot_mat: bool = False):
     """
-    It returns a dictionary 'materials_polyfits' that contains the fitting curve of steel (mass vs hub height).
-    The dictionary has the keys 'polyfit' and 'confidence_95%' where the values are stored. The uncertainty
-    (to be added to the lci) is stored as 'std_dev' also in the same dictionary and corresponds to the standard deviation of the residuals.
-    If plot_mat is set to True, all the materials fitting plots will be shown.
+    It returns a dictionary 'materials_polyfits' that contains the fitting curve of steel (mass vs hub height). The
+    dictionary has the keys 'polyfit' and 'confidence_95%' where the values are stored. The uncertainty (to be added
+    to the lci) is stored as 'std_dev' also in the same dictionary and corresponds to the standard deviation of the
+    residuals. If plot_mat is set to True, all the materials fitting plots will be shown.
     """
     try:
-        vestas_data = pd.read_excel(vestas_file, sheet_name="1_MATERIALS_TURBINE", dtype=None, decimal=";", header=0)
+        vestas_data = pd.read_excel(VESTAS_FILE, sheet_name="1_MATERIALS_TURBINE", dtype=None, decimal=";", header=0)
     except FileNotFoundError:
-        print('WARNING: remember to change the route of the variable vestas_file to the location of clean_data.xlsx '
+        print('WARNING: remember to change the route of the variable VESTAS_FILE to the location of clean_data.xlsx '
               'in your computer')
+        sys.exit()
 
     short_vestas_data = vestas_data[vestas_data['Hub height'] <= 84]
     # Extracting columns
@@ -67,10 +68,7 @@ def steel_turbine(plot_mat: bool = False):
     residual_variance = np.mean(residuals ** 2)
     residual_std_dev = np.sqrt(residual_variance)
     # long_short = {}
-    polyfit_and_confidence = {}
-    polyfit_and_confidence['polyfit'] = predict_steel
-    polyfit_and_confidence['confidence_95%'] = confidence
-    polyfit_and_confidence['std_dev'] = residual_std_dev
+    polyfit_and_confidence = {'polyfit': predict_steel, 'confidence_95%': confidence, 'std_dev': residual_std_dev}
     materials_polyfits['Low alloy steel'] = polyfit_and_confidence
     # Extract short data
     short_x = short_vestas_data['Hub height']
@@ -87,10 +85,8 @@ def steel_turbine(plot_mat: bool = False):
     # residual_variance = np.mean(residuals ** 2)
     residual_std_dev = np.sqrt(residual_variance)
     # We mantain the same confidence and std_dev as the main function.
-    polyfit_and_confidence_short = {}
-    polyfit_and_confidence_short['polyfit'] = short_predict_steel
-    polyfit_and_confidence_short['confidence_95%'] = confidence
-    polyfit_and_confidence_short['std_dev'] = residual_std_dev
+    polyfit_and_confidence_short = {'polyfit': short_predict_steel, 'confidence_95%': confidence,
+                                    'std_dev': residual_std_dev}
     if plot_mat:
         plot_materials(x=short_x, y=short_y, residuals=residuals, interpolation_eq=short_predict_steel,
                        confidence=confidence,
@@ -100,13 +96,12 @@ def steel_turbine(plot_mat: bool = False):
     # where do the linear equations intersect?
     intersection_poly = np.poly1d(short_predict_steel - predict_steel)
     intersection_x = np.roots(intersection_poly)
-    intersection = {}
-    intersection['Low alloy steel'] = intersection_x
+    intersection = {'Low alloy steel': intersection_x}
 
     return vestas_data, materials_polyfits, materials_polyfits_short, intersection
 
 
-def other_turbine_materials(plot_mat=False) -> dict:
+def other_turbine_materials(plot_mat=False) -> (tuple, dict, dict):
     """
     It returns a dictionary 'materials_polyfits' that contains the fitting curves of steel and turbine materials.
     The dictionary has the keys 'polyfit' and 'confidence_95%' where the values are stored.
@@ -119,13 +114,13 @@ def other_turbine_materials(plot_mat=False) -> dict:
 
     while initial_index <= last_index:
         short = False
-        materials_to_adjust_3MW = ['PUR', 'PVC']
-        materials_to_adjust_1MW = ['Low alloy steel', 'Chromium steel', 'Epoxy resin', 'Fiberglass', 'Rubber',
+        materials_to_adjust_3mw = ['PUR', 'PVC']
+        materials_to_adjust_1mw = ['Low alloy steel', 'Chromium steel', 'Epoxy resin', 'Fiberglass', 'Rubber',
                                    'Aluminium']
-        if columns[initial_index] in materials_to_adjust_3MW:
+        if columns[initial_index] in materials_to_adjust_3mw:
             short_vestas_data = vestas_data[vestas_data['Power (MW)'] <= 3.0]
             short = True
-        elif columns[initial_index] in materials_to_adjust_1MW:
+        elif columns[initial_index] in materials_to_adjust_1mw:
             short_vestas_data = vestas_data[vestas_data['Power (MW)'] <= 1.0]
             short = True
         x = vestas_data[columns[columns.index('Power (MW)')]]  # power (MW)
@@ -140,10 +135,7 @@ def other_turbine_materials(plot_mat=False) -> dict:
         confidence = 1.96 * std_error
         residual_variance = np.mean(residuals ** 2)
         residual_std_dev = np.sqrt(residual_variance)
-        polyfit_and_confidence = {}
-        polyfit_and_confidence['polyfit'] = predict_mat
-        polyfit_and_confidence['confidence_95%'] = confidence
-        polyfit_and_confidence['std_dev'] = residual_std_dev
+        polyfit_and_confidence = {'polyfit': predict_mat, 'confidence_95%': confidence, 'std_dev': residual_std_dev}
         materials_polyfits[columns[initial_index]] = polyfit_and_confidence
         if short:
             short_x = short_vestas_data[columns[columns.index('Power (MW)')]]
@@ -161,10 +153,8 @@ def other_turbine_materials(plot_mat=False) -> dict:
             confidence = 1.96 * std_error  # 95% confidence interval multiplier
             # residual_variance = np.mean(residuals ** 2)
             residual_std_dev = np.sqrt(residual_variance)
-            polyfit_and_confidence_short = {}
-            polyfit_and_confidence_short['polyfit'] = short_predict_mat
-            polyfit_and_confidence_short['confidence_95%'] = confidence
-            polyfit_and_confidence_short['std_dev'] = residual_std_dev
+            polyfit_and_confidence_short = {'polyfit': short_predict_mat, 'confidence_95%': confidence,
+                                            'std_dev': residual_std_dev}
             materials_polyfits_short[columns[initial_index]] = polyfit_and_confidence_short
 
             intersection_poly = np.poly1d(short_predict_mat - predict_mat)
@@ -178,26 +168,24 @@ def other_turbine_materials(plot_mat=False) -> dict:
     return materials_polyfits, materials_polyfits_short, intersection
 
 
-def rare_earth(generator_type: List[Literal['dd_eesg', 'dd_pmsg', 'gb_pmsg', 'gb_dfig']]) -> (
-        Dict)[Literal['Praseodymium', 'Neodymium', 'Dysprosium', 'Terbium', 'Boron'], int]:
+def rare_earth(generator_type: Literal['dd_eesg', 'dd_pmsg', 'gb_pmsg', 'gb_dfig']):
     """
     It returns a dictionary 'rare_earth_int' that contains the intensities of the rare earth materials according to the
     generator type that the turbine uses.
     Material intensity data according to Ferrara et al. (2020). Units: t/GW
     generator_type: accepted arguments 'dd_eesg', 'dd_pmsg', 'gb_pmsg', 'gb_dfig'.
     """
-    rare_earth = {'Praseodymium': {'dd_eesg': 9, 'dd_pmsg': 35, 'gb_pmsg': 4, 'gb_dfig': 0},
-                  'Neodymium': {'dd_eesg': 28, 'dd_pmsg': 180, 'gb_pmsg': 51, 'gb_dfig': 12},
-                  'Dysprosium': {'dd_eesg': 6, 'dd_pmsg': 17, 'gb_pmsg': 6, 'gb_dfig': 2},
-                  'Terbium': {'dd_eesg': 1, 'dd_pmsg': 7, 'gb_pmsg': 1, 'gb_dfig': 0},
-                  'Boron': {'dd_eesg': 0, 'dd_pmsg': 6, 'gb_pmsg': 1, 'gb_dfig': 0}
-                  }
-    rare_earth_int = {}
-    rare_earth_int['Praseodymium'] = rare_earth['Praseodymium'][generator_type]
-    rare_earth_int['Neodymium'] = rare_earth['Neodymium'][generator_type]
-    rare_earth_int['Dysprosium'] = rare_earth['Dysprosium'][generator_type]
-    rare_earth_int['Terbium'] = rare_earth['Terbium'][generator_type]
-    rare_earth_int['Boron'] = rare_earth['Boron'][generator_type]
+    rare_earth_dict = {'Praseodymium': {'dd_eesg': 9, 'dd_pmsg': 35, 'gb_pmsg': 4, 'gb_dfig': 0},
+                       'Neodymium': {'dd_eesg': 28, 'dd_pmsg': 180, 'gb_pmsg': 51, 'gb_dfig': 12},
+                       'Dysprosium': {'dd_eesg': 6, 'dd_pmsg': 17, 'gb_pmsg': 6, 'gb_dfig': 2},
+                       'Terbium': {'dd_eesg': 1, 'dd_pmsg': 7, 'gb_pmsg': 1, 'gb_dfig': 0},
+                       'Boron': {'dd_eesg': 0, 'dd_pmsg': 6, 'gb_pmsg': 1, 'gb_dfig': 0}
+                       }
+    rare_earth_int = {'Praseodymium': rare_earth_dict['Praseodymium'][generator_type],
+                      'Neodymium': rare_earth_dict['Neodymium'][generator_type],
+                      'Dysprosium': rare_earth_dict['Dysprosium'][generator_type],
+                      'Terbium': rare_earth_dict['Terbium'][generator_type],
+                      'Boron': rare_earth_dict['Boron'][generator_type]}
     return rare_earth_int
 
 
@@ -271,14 +259,14 @@ def plot_materials(x, y, residuals, interpolation_eq, confidence, xlabel: str, y
     plt.show()
 
 
-def materials_mass(generator_type: List[Literal['dd_eesg', 'dd_pmsg', 'gb_pmsg', 'gb_dfig']],
+def materials_mass(generator_type: Literal['dd_eesg', 'dd_pmsg', 'gb_pmsg', 'gb_dfig'],
                    turbine_power: float, hub_height: float):
     """
     returns a dictionary 'mass_materials' with material names as keys and their masses in kg as values.
     generator_type: it only accepts the models (strings) 'dd_eesg', 'dd_pmsg', 'gb_pmsg', 'gb_dfig'.
     """
     mass_materials = {}
-    materials_polyfits, mat_polyfits_short, intersection = foundations_mat(vestas_file)
+    materials_polyfits, mat_polyfits_short, intersection = foundations_mat(VESTAS_FILE)
 
     uncertainty = {}
 
@@ -316,15 +304,10 @@ def materials_mass(generator_type: List[Literal['dd_eesg', 'dd_pmsg', 'gb_pmsg',
         if k == 'Concrete_foundations':
             # transform concrete mass (t) to volume in m3
             volume = materials_polyf[k]['polyfit'](turbine_power) / 2.4
-            #volume = materials_polyf[k]['polyfit'](steel_mass_turbine) / 2400
+
             if volume < 0:
                 volume = 0.0
             mass_materials[k] = volume
-        #elif '_foundations' in k:
-        #    mass = materials_polyf[k]['polyfit'](steel_mass_turbine)
-        #    if mass < 0:
-        #        mass = 0.0
-        #    mass_materials[k] = mass
         counter += 1
 
     rare_earth_int = rare_earth(generator_type)
@@ -450,7 +433,7 @@ def mva500_transformer():
 
 
 def manipulate_steel_activities(commissioning_year: int, recycled_share: float = None,
-                                electricity_mix: List[Literal['Europe', 'Poland', 'Norway']] = None):
+                                electricity_mix: Optional[Literal['Europe', 'Poland', 'Norway']] = None):
     """
     This function creates a copy of the secondary and primary steel production activities in Ecoinvent
     and adapts the location of its electricity and gas inputs. The adaptation is made according to the share of steel
@@ -486,17 +469,17 @@ def manipulate_steel_activities(commissioning_year: int, recycled_share: float =
                   'does not have data from the steel industry. '
                   'We recommend you to specify an expected recycling rate if you have an estimation. '
                   'Otherwise, 41.6% of recycled steel will be considered by default.')
-            print('Steel recycling share: ' + str(secondary_steel[str(commissioning_year)]))
-        else:
+            print('Steel recycling share: 41.6%')
+        elif commissioning_year < 2012:
             print('WARNING. This wind turbine was commissioned before 2012, for which WindTrace '
                   'does not have data from the steel industry. We recommend you to specify an expected recycling rate '
                   'if you have an estimation. Otherwise, 41.6% of recycled steel will be considered by default.')
-            print('Steel recycling share: ' + str(secondary_steel[str(commissioning_year)]))
+            print('Steel recycling share: 41.6%')
 
     if recycled_share is None and electricity_mix is None:
         print('WARNING. You did not select any electricity_mix. '
               'The mean shares by country applied in the steel industry between 2017 and 2021 will be used')
-        print('Steel recycling share: ' + str(secondary_steel[str(commissioning_year)]))
+        print('Electricity mix: European mix provided by Eurofer')
         act_name = "market for steel, low-alloyed, " + str(commissioning_year - 1)
         code_name = "steel, " + str(commissioning_year - 1)
         try:
@@ -547,8 +530,8 @@ def manipulate_steel_activities(commissioning_year: int, recycled_share: float =
             for ex in gas_ex:
                 ex.delete()
 
-            # Add new exchanges with adjusted location. The total amount of gas and electricity inputs are maintained from
-            # the original Ecoinvent activity. The only main change is the share of each country.
+            # Add new exchanges with adjusted location. The total amount of gas and electricity inputs are maintained
+            # from the original Ecoinvent activity. The only main change is the share of each country.
             if electricity_mix is None:
                 for country in steel_data_EU27.keys():
                     elect_act = cutoff391.get(code=steel_data_EU27[country]['elect_code'])
@@ -719,13 +702,13 @@ def manipulate_steel_activities(commissioning_year: int, recycled_share: float =
 
 def lci_materials(park_name: str, park_power: float, number_of_turbines: int, park_location: str,
                   park_coordinates: tuple,
-                  manufacturer: List[Literal['Vestas', 'Siemens Gamesa', 'Nordex', 'Enercon', 'LM Wind']],
+                  manufacturer: Literal['Vestas', 'Siemens Gamesa', 'Nordex', 'Enercon', 'LM Wind'],
                   rotor_diameter: float,
                   turbine_power: float, hub_height: float, commissioning_year: int,
                   recycled_share_steel: float = None,
                   lifetime: int = 20,
-                  electricity_mix_steel: List[Literal['Norway', 'Europe', 'Poland']] = None,
-                  generator_type: List[Literal['dd_eesg', 'dd_pmsg', 'gb_pmsg', 'gb_dfig']] = 'gb_dfig',
+                  electricity_mix_steel: Optional[Literal['Norway', 'Europe', 'Poland']] = None,
+                  generator_type: Literal['dd_eesg', 'dd_pmsg', 'gb_pmsg', 'gb_dfig'] = 'gb_dfig',
                   include_life_cycle_stages: bool = True):
     """
     It creates the activities 'park_name_single_turbine' (code: 'park_name_single_turbine'),
@@ -745,7 +728,8 @@ def lci_materials(park_name: str, park_power: float, number_of_turbines: int, pa
         turbine_act.save()
     except bd.errors.DuplicateNode:
         print(
-            'An inventory for a park with the name ' + '"' + park_name + '"' + ' was already created before in the database ')
+            'An inventory for a park with the name ' + '"' + park_name + '"' + 'was already created before in the '
+                                                                               'database ')
         print('"new_db". You may want to think about giving '
               'another name to the wind park you are trying to '
               'analyse. Otherwise, you may want to delete '
@@ -812,7 +796,6 @@ def lci_materials(park_name: str, park_power: float, number_of_turbines: int, pa
         new_exc.save()
         eol_act.save()
 
-    if include_life_cycle_stages:
         materials_activity = materials_act
         manufacturing_activity = manufacturing_act
     else:
@@ -847,7 +830,7 @@ def lci_materials(park_name: str, park_power: float, number_of_turbines: int, pa
             steel, ch = manipulate_steel_activities(commissioning_year=commissioning_year,
                                                     recycled_share=recycled_share_steel,
                                                     electricity_mix=electricity_mix_steel)
-            if ch != []:
+            if ch:
                 inp = ch[0]
             else:
                 inp = MATERIALS_EI391_ACTIVITY_CODES[material]['code']
@@ -1026,7 +1009,7 @@ def lci_materials(park_name: str, park_power: float, number_of_turbines: int, pa
 
 
 def end_of_life(scenario: int, park_name: str,
-                generator_type: List[Literal['dd_eesg', 'dd_pmsg', 'gb_pmsg', 'gb_dfig']],
+                generator_type: Literal['dd_eesg', 'dd_pmsg', 'gb_pmsg', 'gb_dfig'],
                 turbine_power: float, hub_height: float, include_life_cycle_stages: bool = True):
     """
     This function adds the end-of-life of materials to the turbine activity.
@@ -1035,6 +1018,11 @@ def end_of_life(scenario: int, park_name: str,
     Recycling activities are not included in the system boundaries (EPD approach for EoL).
     Note: Avoided impacts of 'virgin material substitution' are also not included.
     """
+    if 1 > scenario or scenario > 4:
+        print('There are 4 eol scenarios in WindTrace. You chose a number that is not in the range 1-4. '
+              'By default we applied the baseline scenario')
+        scenario = 1
+
     # materials classification (according to EoL treatment groups)
     fe_alloys = ['Low alloy steel', 'Low alloy steel_foundations', 'Chromium steel',
                  'Chromium steel_foundations', 'Cast iron']
@@ -1056,7 +1044,8 @@ def end_of_life(scenario: int, park_name: str,
         if any(element in material for element in fe_alloys):
             if scenario == 1 or scenario == 2 or scenario == 4:
                 recycling_rate = 0.9
-            elif scenario == 3:
+            # scenario == 3
+            else:
                 recycling_rate = 0.52
             inp = cutoff391.get(code=EOL_S1_EI391_ACTIVITY_CODES[material]['landfill']['code'])
             ex = eol_activity.new_exchange(input=inp, type='technosphere',
@@ -1068,7 +1057,8 @@ def end_of_life(scenario: int, park_name: str,
                 recycling_rate = 0.9
             elif scenario == 2:
                 recycling_rate = 0.53
-            elif scenario == 3:
+            # scenario == 3
+            else:
                 recycling_rate = 0.42
             inp = cutoff391.get(code=EOL_S1_EI391_ACTIVITY_CODES[material]['landfill']['code'])
             ex = eol_activity.new_exchange(input=inp, type='technosphere',
@@ -1080,7 +1070,8 @@ def end_of_life(scenario: int, park_name: str,
                 recycling_rate = 0.9
             elif scenario == 2:
                 recycling_rate = 0.7
-            elif scenario == 3:
+            # secenario == 3
+            else:
                 recycling_rate = 0.42
             inp = cutoff391.get(code=EOL_S1_EI391_ACTIVITY_CODES[material]['landfill']['code'])
             ex = eol_activity.new_exchange(input=inp, type='technosphere',
@@ -1094,7 +1085,8 @@ def end_of_life(scenario: int, park_name: str,
                 recycling_rate = 0.21
             elif scenario == 3:
                 recycling_rate = 0.01
-            elif scenario == 4:
+            # scenario == 4
+            else:
                 recycling_rate = 0.7
             inp = cutoff391.get(code=EOL_S1_EI391_ACTIVITY_CODES[material]['landfill']['code'])
             ex = eol_activity.new_exchange(input=inp, type='technosphere',
@@ -1157,7 +1149,7 @@ def end_of_life(scenario: int, park_name: str,
 
 
 def maintenance(park_name: str,
-                generator_type: List[Literal['dd_eesg', 'dd_pmsg', 'gb_pmsg', 'gb_dfig']],
+                generator_type: Literal['dd_eesg', 'dd_pmsg', 'gb_pmsg', 'gb_dfig'],
                 turbine_power: float, hub_height: float, lifetime: int, include_life_cycle_stages: bool = True):
     """
     This function adds the maintenance activities (inspection trips and oil changes) to the turbine activity.
@@ -1198,9 +1190,9 @@ def maintenance(park_name: str,
         om_ex.save()
 
 
-def transport(manufacturer: List[Literal['Vestas', 'Siemens Gamesa', 'Nordex', 'ENERCON', 'LM Wind']],
+def transport(manufacturer: Literal['Vestas', 'Siemens Gamesa', 'Nordex', 'ENERCON', 'LM Wind'],
               park_coordinates: tuple, park_name: str,
-              generator_type: List[Literal['dd_eesg', 'dd_pmsg', 'gb_pmsg', 'gb_dfig']], turbine_power: float,
+              generator_type: Literal['dd_eesg', 'dd_pmsg', 'gb_pmsg', 'gb_dfig'], turbine_power: float,
               hub_height: float, include_life_cycle_stages: bool = True):
     """
     **Tower transport. Distance data (in km) according to Vestas report on Vestas V162-6.2 MW.**
@@ -1442,7 +1434,7 @@ def auxiliary_road_materials(turbine_power: float, park_name: str, include_life_
     # (copying the activity in the database new_db and making the changes there)
     road_act_in_new_db = new_db.search('road construction')
 
-    if road_act_in_new_db == []:
+    if not road_act_in_new_db:
         road_act = cutoff391.get(code='3d1d98819862a4057c75095315820d52')
         road_new = road_act.copy(database="new_db")
         technosphere_activities_to_remove = ['bitumen', 'concrete', 'steel']
@@ -1463,7 +1455,7 @@ def auxiliary_road_materials(turbine_power: float, park_name: str, include_life_
     new_exc.save()
 
 
-def excavation_activities(generator_type: List[Literal['dd_eesg', 'dd_pmsg', 'gb_pmsg', 'gb_dfig']],
+def excavation_activities(generator_type: Literal['dd_eesg', 'dd_pmsg', 'gb_pmsg', 'gb_dfig'],
                           turbine_power: float, hub_height: float, rotor_diameter: float,
                           number_of_turbines: int, park_name: str, include_life_cycle_stages: bool = True):
     """
@@ -1544,6 +1536,7 @@ def electricity_production(park_name: str, park_power: float,
         elec_prod_park = cf * 365 * 24 * park_power * adjusted_time * 1000
 
     return elec_prod_turbine, elec_prod_park
+
 
 def lci_wind_turbine(park_name: str, park_power: float, number_of_turbines: int, park_location: str,
                      park_coordinates: tuple, manufacturer: str, rotor_diameter: int,
@@ -1645,7 +1638,8 @@ def lci_wind_turbine(park_name: str, park_power: float, number_of_turbines: int,
         new_exc.save()
     except bd.errors.DuplicateNode:
         print(
-            'An inventory for a park with the name ' + '"' + park_name + '"' + ' was already created before in the database ')
+            'An inventory for a park with the name ' + '"' + park_name + '"' + 'was already created before in the '
+                                                                               'database ')
         print('"new_db". You may want to think about giving '
               'another name to the wind park you are trying to '
               'analyse. Otherwise, you may want to delete '
@@ -1680,7 +1674,7 @@ def lci_wind_turbine(park_name: str, park_power: float, number_of_turbines: int,
 
 def lca_wind_turbine(park_name: str, park_power: float,
                      method: str = 'ReCiPe 2016 v1.03, midpoint (H)',
-                     indicators: List[Tuple[str, str, str]] = [],
+                     indicators: List[Tuple[str, str, str]] = None,
                      turbine: bool = True):
     """
     Based on LCIs previously built with the function lci_wind_turbine, it creates a dictionary (total_park_results)
@@ -1690,6 +1684,8 @@ def lca_wind_turbine(park_name: str, park_power: float,
     Default turbine=True, it means that we calculate the impacts for the FU = 1 turbine.
     In case of wanting the impacts from the park: set turbine=False.
     """
+    if indicators is None:
+        indicators = []
     results = {}
     results_kwh = {}
 
@@ -1701,7 +1697,7 @@ def lca_wind_turbine(park_name: str, park_power: float,
 
     if turbine:
         print('Functional unit: 1 turbine')
-        if indicators != []:
+        if indicators:
             print('LCIA methods: ' + str(indicators)[1:-1])
         else:
             print('LCIA methods: ' + str(method))
@@ -1716,7 +1712,7 @@ def lca_wind_turbine(park_name: str, park_power: float,
             sys.exit()
     else:
         print('Functional unit: 1 wind park')
-        if indicators != []:
+        if indicators:
             print('LCIA methods: ' + str(indicators)[1:-1])
         else:
             print('LCIA methods: ' + str(method))
@@ -1751,5 +1747,6 @@ def delete_new_db():
         a.delete()
     if len(new_db) == 0:
         print('The database new_db was cleared and it is now empty')
+
 
 pass

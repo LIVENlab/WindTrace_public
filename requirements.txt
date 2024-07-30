@@ -211,3 +211,11 @@ xyzservices=2023.10.1=pyhd8ed1ab_0
 xz=5.2.6=h8d14728_0
 zlib=1.2.13=hcfcfb64_5
 zstd=1.5.5=h12be248_0
+
+pandas~=2.1.4
+numpy~=1.26.2
+matplotlib~=3.8.2
+bw2data~=4.0.dev33
+bw2io~=0.9.dev26
+geopy~=2.4.1
+stats_arrays~=0.6.6
