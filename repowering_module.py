@@ -28,13 +28,15 @@ def lci_repowering(extension_long: bool, extension_short: bool, substitution: bo
                    manufacturer_i: Literal['Vestas', 'Siemens Gamesa', 'Nordex', 'Enercon', 'LM Wind'],
                    rotor_diameter_i: float,
                    turbine_power_i: float, hub_height_i: float, commissioning_year_i: int,
-                   lifetime_extension: int, number_of_turbines_extension: int, cf_extension: float,
-                   time_adjusted_cf_extension: float,
-                   recycled_share_steel_extension_or_repowering: float = None,
                    recycled_share_steel_i: float = None,
                    lifetime_i: int = 20,
                    electricity_mix_steel_i: Optional[Literal['Norway', 'Europe', 'Poland']] = None,
                    generator_type_i: Literal['dd_eesg', 'dd_pmsg', 'gb_pmsg', 'gb_dfig'] = 'gb_dfig',
+                   lifetime_extension: int = None, number_of_turbines_extension: int = None,
+                   cf_extension: float = None, time_adjusted_cf_extension: float = 0.009,
+                   lifetime_substitution: int = None, number_of_turbines_substitution: int = None,
+                   cf_substitution: float = None, time_adjusted_cf_substitution: float = 0.009,
+                   recycled_share_steel_extension_or_repowering: float = None,
                    park_power_repowering: float = None,
                    number_of_turbines_repowering: int = None,
                    manufacturer_repowering: str = None,
@@ -44,11 +46,11 @@ def lci_repowering(extension_long: bool, extension_short: bool, substitution: bo
                    generator_type_repowering: Optional[Literal['dd_eesg', 'dd_pmsg', 'gb_pmsg', 'gb_dfig']] = 'gb_dfig',
                    electricity_mix_steel_repowering: Optional[Literal['Norway', 'Europe', 'Poland']] = None,
                    lifetime_repowering: int = 25,
+                   cf_repowering: float = 0.24,
+                   attrition_rate_repowering: float = 0.009,
                    land_use_permanent_intensity_repowering: int = 3000,
                    land_cover_type_repowering: str = 'industrial',
                    eol_scenario_repowering: int = 1,
-                   cf_repowering: float = 0.24,
-                   attrition_rate_repowering: float = 0.009,
                    eol: bool = True, transportation: bool = True, use_and_maintenance: bool = True,
                    installation: bool = True
                    ):
@@ -58,11 +60,11 @@ def lci_repowering(extension_long: bool, extension_short: bool, substitution: bo
               'Choose either one, the other or none, by setting extension_long and extension_short '
               'variables to True or False')
         sys.exit()
-    if number_of_turbines_extension > number_of_turbines_i:
+    if (extension_short or extension_long) and (number_of_turbines_extension > number_of_turbines_i):
         print(f'WARNING. The initial number of turbines was {number_of_turbines_i}. The number of turbines extended '
               f'cannot be bigger than this, but you introduced {number_of_turbines_extension} turbines to be extended.')
         sys.exit()
-    elif number_of_turbines_extension < number_of_turbines_i:
+    elif (extension_short or extension_long) and (number_of_turbines_extension < number_of_turbines_i):
         print(f'WARNING. You introduced less turbines to be extended ({number_of_turbines_extension}) '
               f'than the initial number of turbines ({number_of_turbines_i}. This means not all turbines in the park '
               f'are being extended')
@@ -73,7 +75,7 @@ def lci_repowering(extension_long: bool, extension_short: bool, substitution: bo
     # calculate the year when the extension is happening
     year_of_extension = commissioning_year_i + lifetime_i
     year_of_repowering = commissioning_year_i + lifetime_i
-    if (extension_short or extension_long) and repowering:
+    if (extension_short or extension_long) and (repowering or substitution):
         year_of_repowering = year_of_repowering + lifetime_extension
 
     # print the type of eol (e.g., short lifetime extension + repowering)
@@ -132,7 +134,6 @@ def lci_repowering(extension_long: bool, extension_short: bool, substitution: bo
 
     if extension_long:
         turbine_act = life_extension(park_name=park_name_i, park_location=park_location_i,
-                                     commissioning_year_i=commissioning_year_i, lifetime_i=lifetime_i,
                                      hub_height_i=hub_height_i, turbine_power_i=turbine_power_i,
                                      manufacturer_i=manufacturer_i, park_coordinates_i=park_coordinates_i,
                                      steel=consts.LONG_EXTENSION['steel'], c_steel=consts.LONG_EXTENSION['c_steel'],
@@ -157,7 +158,6 @@ def lci_repowering(extension_long: bool, extension_short: bool, substitution: bo
 
     elif extension_short:
         turbine_act = life_extension(park_name=park_name_i, park_location=park_location_i,
-                                     commissioning_year_i=commissioning_year_i, lifetime_i=lifetime_i,
                                      hub_height_i=hub_height_i, turbine_power_i=turbine_power_i,
                                      manufacturer_i=manufacturer_i, park_coordinates_i=park_coordinates_i,
                                      steel=consts.SHORT_EXTENSION['steel'], c_steel=consts.SHORT_EXTENSION['c_steel'],
@@ -181,7 +181,6 @@ def lci_repowering(extension_long: bool, extension_short: bool, substitution: bo
                                           park_extended_act=park_extended_act, turbine_extended_act=turbine_act)
     if substitution and not (extension_short or extension_long):
         turbine_act = life_extension(park_name=park_name_i, park_location=park_location_i,
-                                     commissioning_year_i=commissioning_year_i, lifetime_i=lifetime_i,
                                      hub_height_i=hub_height_i, turbine_power_i=turbine_power_i,
                                      manufacturer_i=manufacturer_i, park_coordinates_i=park_coordinates_i,
                                      steel=consts.REPLACEMENT_BASELINE['steel'],
@@ -193,23 +192,22 @@ def lci_repowering(extension_long: bool, extension_short: bool, substitution: bo
                                      others=consts.REPLACEMENT_BASELINE['others'],
                                      foundations=consts.REPLACEMENT_BASELINE['foundations'],
                                      electronics_and_electrics=consts.REPLACEMENT_BASELINE['electronics_and_electrics'],
-                                     lci_materials_i=lci_materials, lifetime_extension=lifetime_extension,
+                                     lci_materials_i=lci_materials, lifetime_extension=lifetime_substitution,
                                      recycled_share_extension=recycled_share_steel_extension_or_repowering,
                                      substitution=substitution, year_of_extension=year_of_extension)
         park_extended_act = extension_wind_park(park_location=park_location_i, park_name=park_name_i,
                                                 extension_turbine_act=turbine_act,
-                                                number_of_turbines_extended=number_of_turbines_extension,
+                                                number_of_turbines_extended=number_of_turbines_substitution,
                                                 substitution=substitution)
         electricity_production_activities(park_name=park_name_i, park_location=park_location_i, park_power=park_power_i,
                                           turbine_power=turbine_power_i,
-                                          time_adjusted_cf_extended=time_adjusted_cf_extension,
-                                          lifetime_extended=lifetime_extension, cf_extended=cf_extension,
+                                          time_adjusted_cf_extended=time_adjusted_cf_substitution,
+                                          lifetime_extended=lifetime_substitution, cf_extended=cf_substitution,
                                           park_extended_act=park_extended_act, turbine_extended_act=turbine_act,
                                           substitution=substitution)
     elif substitution and (extension_short or extension_long):
         # change the commissioning year to the year when the life extension ends
         turbine_act = life_extension(park_name=park_name_i, park_location=park_location_i,
-                                     commissioning_year_i=year_of_extension, lifetime_i=lifetime_i,
                                      hub_height_i=hub_height_i, turbine_power_i=turbine_power_i,
                                      manufacturer_i=manufacturer_i, park_coordinates_i=park_coordinates_i,
                                      steel=consts.REPLACEMENT_BASELINE['steel'],
@@ -261,7 +259,7 @@ def provisional_print(material, initial_amount, classification, share, final_amo
           f'Classification: {classification}. Share: {share}. Final amount: {final_amount}')
 
 
-def life_extension(park_name: str, park_location: str, commissioning_year_i: int, lifetime_i: int,
+def life_extension(park_name: str, park_location: str,
                    turbine_power_i: float, hub_height_i: float, park_coordinates_i: tuple,
                    manufacturer_i: Literal['Vestas', 'Siemens Gamesa', 'Nordex', 'Enercon', 'LM Wind'],
                    steel: float, c_steel: float, iron: float, aluminium: float, copper: float, plastics: float,
@@ -278,26 +276,23 @@ def life_extension(park_name: str, park_location: str, commissioning_year_i: int
     plastics include: epoxy resin, rubber, PUR, PVC, PE, fiberglass
     others include: lubricating oil, rare earth elements
     """
-    # calculate year of manufacturing
-    year_of_manufacturing = year_of_extension - 1
-    print(f'The initial turbine was commissioned in {str(commissioning_year_i)}')
-    print(f'The lifetime of the initial turbine was {str(lifetime_i)} years')
-    print(f'Then, the extension started in {year_of_extension} and the manufacturing is assumed to be a year before '
-          f'({year_of_manufacturing})')
-
-    # create inventory for the lifetime extension
-    extension_act = new_db.new_activity(name=park_name + '_extension', code=park_name + '_extension',
-                                        location=park_location, unit='unit')
-    extension_act.save()
-    new_exc = extension_act.new_exchange(input=extension_act.key, amount=1.0, unit="unit", type='production')
-    new_exc.save()
-    extension_act.save()
-
     # extension or substitution
     if substitution:
         name = 'substitution'
     else:
         name = 'extension'
+
+    # calculate year of manufacturing
+    year_of_manufacturing = year_of_extension - 1
+    print(f'The manufacturing is assumed to be a year before ({year_of_manufacturing})')
+
+    # create inventory for the lifetime extension
+    extension_act = new_db.new_activity(name=park_name + f'_{name}', code=park_name + f'_{name}',
+                                        location=park_location, unit='unit')
+    extension_act.save()
+    new_exc = extension_act.new_exchange(input=extension_act.key, amount=1.0, unit="unit", type='production')
+    new_exc.save()
+    extension_act.save()
 
     # 1. materials
     # create inventory for the materials
@@ -875,9 +870,9 @@ def test(park_name: str, extension: bool,
 
 pass
 
-# example of use lifetime extension long:
+# example of use lifetime extension long (no substitution or repowering):
 lci_repowering(extension_long=True, extension_short=False, substitution=False, repowering=False,
-               park_name_i='repowering_test_26', park_power_i=2.0, number_of_turbines_i=1,
+               park_name_i='test_101_long', park_power_i=10.0, number_of_turbines_i=5,
                park_location_i='ES',
                park_coordinates_i=(53.43568404210107, 11.214208299339631),
                manufacturer_i='Vestas',
@@ -887,9 +882,79 @@ lci_repowering(extension_long=True, extension_short=False, substitution=False, r
                lifetime_i=20,
                electricity_mix_steel_i=None,
                generator_type_i='gb_dfig',
-               cf_extension=0.30,
-               lifetime_extension=5,
-               number_of_turbines_extension=1,
-               time_adjusted_cf_extension=0.09, )
+               lifetime_extension=10, number_of_turbines_extension=5,
+               cf_extension=0.30, time_adjusted_cf_extension=0.009)
+
+# example of use lifetime extension short (no substitution or repowering):
+lci_repowering(extension_long=False, extension_short=True, substitution=False, repowering=False,
+               park_name_i='test_101_short', park_power_i=10.0, number_of_turbines_i=5,
+               park_location_i='ES',
+               park_coordinates_i=(53.43568404210107, 11.214208299339631),
+               manufacturer_i='Vestas',
+               rotor_diameter_i=120,
+               turbine_power_i=2.0, hub_height_i=120, commissioning_year_i=2009,
+               recycled_share_steel_i=None,
+               lifetime_i=20,
+               electricity_mix_steel_i=None,
+               generator_type_i='gb_dfig',
+               lifetime_extension=5, number_of_turbines_extension=5,
+               cf_extension=0.30, time_adjusted_cf_extension=0.009)
+
+# example of use substitution (no lifetime extension):
+lci_repowering(extension_long=False, extension_short=False, substitution=True, repowering=False,
+               park_name_i='test_103_substitution', park_power_i=10.0, number_of_turbines_i=5,
+               park_location_i='ES',
+               park_coordinates_i=(53.43568404210107, 11.214208299339631),
+               manufacturer_i='Vestas',
+               rotor_diameter_i=120,
+               turbine_power_i=2.0, hub_height_i=120, commissioning_year_i=2009,
+               recycled_share_steel_i=None,
+               lifetime_i=20,
+               electricity_mix_steel_i=None,
+               generator_type_i='gb_dfig',
+               lifetime_substitution=20, number_of_turbines_substitution=5,
+               cf_substitution=0.30, time_adjusted_cf_substitution=0.009)
+
+# example of use repowering (no lifetime extension):
+lci_repowering(extension_long=False, extension_short=False, substitution=False, repowering=True,
+               park_name_i='test_101_repowering', park_power_i=10.0, number_of_turbines_i=5,
+               park_location_i='ES',
+               park_coordinates_i=(53.43568404210107, 11.214208299339631),
+               manufacturer_i='Vestas',
+               rotor_diameter_i=120,
+               turbine_power_i=2.0, hub_height_i=120, commissioning_year_i=2009,
+               recycled_share_steel_i=None,
+               lifetime_i=20,
+               electricity_mix_steel_i=None,
+               generator_type_i='gb_dfig',
+               park_power_repowering=10.0,
+               number_of_turbines_repowering=2,
+               manufacturer_repowering='Siemens Gamesa',
+               rotor_diameter_repowering=130,
+               turbine_power_repowering=5.0,
+               hub_height_repowering=140,
+               generator_type_repowering='dd_pmsg',
+               electricity_mix_steel_repowering='Norway',
+               lifetime_repowering=25,
+               cf_repowering=0.4,
+               attrition_rate_repowering=0.009)
+
+# example of use long lifetime extension AND substitution:
+lci_repowering(extension_long=True, extension_short=False, substitution=True, repowering=False,
+               park_name_i='test_101_extension_substitution', park_power_i=10.0, number_of_turbines_i=5,
+               park_location_i='ES',
+               park_coordinates_i=(53.43568404210107, 11.214208299339631),
+               manufacturer_i='Vestas',
+               rotor_diameter_i=120,
+               turbine_power_i=2.0, hub_height_i=120, commissioning_year_i=2009,
+               recycled_share_steel_i=None,
+               lifetime_i=20,
+               electricity_mix_steel_i=None,
+               generator_type_i='gb_dfig',
+               lifetime_extension=5, number_of_turbines_extension=5,
+               cf_extension=0.30, time_adjusted_cf_extension=0.009,
+               lifetime_substitution=20, number_of_turbines_substitution=5,
+               cf_substitution=0.35, time_adjusted_cf_substitution=0.009)
+
 
 pass
