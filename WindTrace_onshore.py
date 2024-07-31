@@ -1198,7 +1198,7 @@ def maintenance(park_name: str,
 
 def transport(manufacturer: Literal['Vestas', 'Siemens Gamesa', 'Nordex', 'ENERCON', 'LM Wind'],
               park_coordinates: tuple, park_name: str,
-              generator_type: Literal['dd_eesg', 'dd_pmsg', 'gb_pmsg', 'gb_dfig'], turbine_power: float,
+              generator_type: Optional[Literal['dd_eesg', 'dd_pmsg', 'gb_pmsg', 'gb_dfig']], turbine_power: float,
               hub_height: float, include_life_cycle_stages: bool = True):
     """
     **Tower transport. Distance data (in km) according to Vestas report on Vestas V162-6.2 MW.**
@@ -1531,9 +1531,10 @@ def electricity_production(park_name: str, park_power: float,
 
 def lci_wind_turbine(park_name: str, park_power: float, number_of_turbines: int, park_location: str,
                      park_coordinates: tuple, manufacturer: str, rotor_diameter: int,
-                     turbine_power: float, hub_height: float, commissioning_year: int, generator_type: str = 'gb_dfig',
+                     turbine_power: float, hub_height: float, commissioning_year: int,
+                     generator_type: Optional[Literal['dd_eesg', 'dd_pmsg', 'gb_pmsg', 'gb_dfig']] = 'gb_dfig',
                      recycled_share_steel: float = None,
-                     electricity_mix_steel: List[Literal['Norway', 'Europe', 'Poland']] = None,
+                     electricity_mix_steel: Optional[Literal['Norway', 'Europe', 'Poland']] = None,
                      lifetime: int = 20, land_use_permanent_intensity: int = 3000, land_cover_type: str = None,
                      eol_scenario: int = 1,
                      cf: float = 0.24, time_adjusted_cf: float = 0.009,

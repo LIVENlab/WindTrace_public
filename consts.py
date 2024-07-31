@@ -216,3 +216,11 @@ secondary_steel = {'other': 0.4162, '2012': 0.4304, '2013': 0.4172, '2014': 0.40
                    '2016': 0.4058, '2017': 0.4135, '2018': 0.4240, '2019': 0.4191, '2020': 0.4365, '2021': 0.4360}
 
 PRINTED_WARNING_STEEL = False
+
+# scenarios lifetime extension, replacement, repowering
+LONG_EXTENSION = {'steel': 0.08, 'c_steel': 0.08, 'iron': 1, 'aluminium': 0.65, 'copper': 0.81,
+                  'plastics': 1, 'others': 1, 'foundations': 0, 'electronics_and_electrics': 0}
+SHORT_EXTENSION = {'steel': 0.01, 'c_steel': 0.01, 'iron': 0.34, 'aluminium': 0, 'copper': 0,
+                   'plastics': 0.91, 'others': 0, 'foundations': 0, 'electronics_and_electrics': 0}
+REPLACEMENT_BASELINE = {'steel': 0.84, 'c_steel': 0.84, 'iron': 1, 'aluminium': 0.65, 'copper': 0.81,
+                        'plastics': 1, 'others': 1, 'foundations': 0, 'electronics_and_electrics': 0}
