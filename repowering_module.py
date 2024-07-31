@@ -29,6 +29,8 @@ def lci_repowering(extension_long: bool, extension_short: bool, repowering: bool
                    manufacturer_i: Literal['Vestas', 'Siemens Gamesa', 'Nordex', 'Enercon', 'LM Wind'],
                    rotor_diameter_i: float,
                    turbine_power_i: float, hub_height_i: float, commissioning_year_i: int,
+                   lifetime_extension: int, number_of_turbines_extended: int, cf_extended: float,
+                   time_adjusted_cf_extended: float,
                    recycled_share_steel_i: float = None,
                    lifetime_i: int = 20,
                    electricity_mix_steel_i: Optional[Literal['Norway', 'Europe', 'Poland']] = None,
@@ -40,6 +42,14 @@ def lci_repowering(extension_long: bool, extension_short: bool, repowering: bool
               'Choose either one, the other or none, by setting extension_long and extension_short '
               'variables to True or False')
         sys.exit()
+    if number_of_turbines_extended > number_of_turbines_i:
+        print(f'WARNING. The initial number of turbines was {number_of_turbines_i}. The number of turbines extended '
+              f'cannot be bigger than this, but you introduced {number_of_turbines_extended} turbines to be extended.')
+        sys.exit()
+    elif number_of_turbines_extended < number_of_turbines_i:
+        print(f'WARNING. You introduced less turbines to be extended ({number_of_turbines_extended}) '
+              f'than the initial number of turbines ({number_of_turbines_i}. This means not all turbines in the park '
+              f'are being extended')
 
     #### initial turbine ####
     # It creates the activities 'park_name_single_turbine' (code: 'park_name_single_turbine'),
@@ -58,25 +68,46 @@ def lci_repowering(extension_long: bool, extension_short: bool, repowering: bool
                                                     generator_type=generator_type_i, include_life_cycle_stages=True)
 
     if extension_long:
-        life_extension(park_name=park_name_i, park_location=park_location_i,
-                       commissioning_year_i=commissioning_year_i, lifetime_i=lifetime_i,
-                       hub_height_i=hub_height_i, turbine_power_i=turbine_power_i,
-                       steel=LONG_EXTENSION['steel'], c_steel=LONG_EXTENSION['c_steel'], iron=LONG_EXTENSION['iron'],
-                       aluminium=LONG_EXTENSION['aluminium'], copper=LONG_EXTENSION['copper'],
-                       plastics=LONG_EXTENSION['plastics'],
-                       others=LONG_EXTENSION['others'], foundations=LONG_EXTENSION['foundations'],
-                       electronics_and_electrics=LONG_EXTENSION['electronics_and_electrics'],
-                       lci_materials_i=lci_materials)
+        turbine_act = life_extension(park_name=park_name_i, park_location=park_location_i,
+                                     commissioning_year_i=commissioning_year_i, lifetime_i=lifetime_i,
+                                     hub_height_i=hub_height_i, turbine_power_i=turbine_power_i,
+                                     manufacturer_i=manufacturer_i, park_coordinates_i=park_coordinates_i,
+                                     steel=LONG_EXTENSION['steel'], c_steel=LONG_EXTENSION['c_steel'],
+                                     iron=LONG_EXTENSION['iron'],
+                                     aluminium=LONG_EXTENSION['aluminium'], copper=LONG_EXTENSION['copper'],
+                                     plastics=LONG_EXTENSION['plastics'],
+                                     others=LONG_EXTENSION['others'], foundations=LONG_EXTENSION['foundations'],
+                                     electronics_and_electrics=LONG_EXTENSION['electronics_and_electrics'],
+                                     lci_materials_i=lci_materials, lifetime_extension=lifetime_extension)
+        park_extended_act = extension_wind_park(park_location=park_location_i, park_name=park_name_i,
+                                                extension_turbine_act=turbine_act,
+                                                number_of_turbines_extended=number_of_turbines_extended)
+        electricity_production_activities(park_name=park_name_i, park_location=park_location_i, park_power=park_power_i,
+                                          turbine_power=turbine_power_i,
+                                          time_adjusted_cf_extended=time_adjusted_cf_extended,
+                                          lifetime_extended=lifetime_extension, cf_extended=cf_extended,
+                                          park_extended_act=park_extended_act, turbine_extended_act=turbine_act)
+
     elif extension_short:
-        life_extension(park_name=park_name_i, park_location=park_location_i,
-                       commissioning_year_i=commissioning_year_i, lifetime_i=lifetime_i,
-                       hub_height_i=hub_height_i, turbine_power_i=turbine_power_i,
-                       steel=SHORT_EXTENSION['steel'], c_steel=SHORT_EXTENSION['c_steel'], iron=SHORT_EXTENSION['iron'],
-                       aluminium=SHORT_EXTENSION['aluminium'], copper=LONG_EXTENSION['copper'],
-                       plastics=SHORT_EXTENSION['plastics'],
-                       others=SHORT_EXTENSION['others'], foundations=SHORT_EXTENSION['foundations'],
-                       electronics_and_electrics=SHORT_EXTENSION['electronics_and_electrics'],
-                       lci_materials_i=lci_materials)
+        turbine_act = life_extension(park_name=park_name_i, park_location=park_location_i,
+                                     commissioning_year_i=commissioning_year_i, lifetime_i=lifetime_i,
+                                     hub_height_i=hub_height_i, turbine_power_i=turbine_power_i,
+                                     manufacturer_i=manufacturer_i, park_coordinates_i=park_coordinates_i,
+                                     steel=SHORT_EXTENSION['steel'], c_steel=SHORT_EXTENSION['c_steel'],
+                                     iron=SHORT_EXTENSION['iron'],
+                                     aluminium=SHORT_EXTENSION['aluminium'], copper=LONG_EXTENSION['copper'],
+                                     plastics=SHORT_EXTENSION['plastics'],
+                                     others=SHORT_EXTENSION['others'], foundations=SHORT_EXTENSION['foundations'],
+                                     electronics_and_electrics=SHORT_EXTENSION['electronics_and_electrics'],
+                                     lci_materials_i=lci_materials, lifetime_extension=lifetime_extension)
+        park_extended_act = extension_wind_park(park_location=park_location_i, park_name=park_name_i,
+                                                extension_turbine_act=turbine_act,
+                                                number_of_turbines_extended=number_of_turbines_extended)
+        electricity_production_activities(park_name=park_name_i, park_location=park_location_i, park_power=park_power_i,
+                                          turbine_power=turbine_power_i,
+                                          time_adjusted_cf_extended=time_adjusted_cf_extended,
+                                          lifetime_extended=lifetime_extension, cf_extended=cf_extended,
+                                          park_extended_act=park_extended_act, turbine_extended_act=turbine_act)
 
 
 def provisional_print(material, initial_amount, classification, share, final_amount):
@@ -90,8 +121,11 @@ def life_extension(park_name: str, park_location: str, commissioning_year_i: int
                    steel: float, c_steel: float, iron: float, aluminium: float, copper: float, plastics: float,
                    others: float, foundations: float, electronics_and_electrics: float,
                    lci_materials_i: dict,
+                   lifetime_extension: int, eol_scenario_extension: Literal[1, 2, 3, 4] = 1
                    ):
     """"
+    creates a new activity for each life cycle phase (except installation) [parkname_extension_lciphase]
+    and links all of them to the extension inventory [parkname_extension]
     plastics include: epoxy resin, rubber, PUR, PVC, PE, fiberglass
     others include: lubricating oil, rare earth elements
     """
@@ -122,8 +156,8 @@ def life_extension(park_name: str, park_location: str, commissioning_year_i: int
     materials_activity.save()
 
     # add materials from the turbine
+    new_masses_extension = {}
     for material in lci_materials_i.keys():
-        new_masses_extension = {}
         if any(element in material for element in ['Praseodymium', 'Neodymium', 'Dysprosium', 'Terbium', 'Boron',
                                                    'Lubricating oil']):
             inp = cutoff391.get(code=consts.MATERIALS_EI391_ACTIVITY_CODES[material]['code'])
@@ -172,7 +206,7 @@ def life_extension(park_name: str, park_location: str, commissioning_year_i: int
             ex.save()
             materials_activity.save()
             provisional_print(material=material, initial_amount=lci_materials_i[material], classification='plastics',
-                              share=plastics, final_amount=lci_materials_i[material] * plastics)
+                              share=plastics, final_amount=lci_materials_i[material] * plastics * 1.1)
             new_masses_extension[material] = lci_materials_i[material] * plastics
         # foundations
         elif 'foundations' in material:
@@ -233,12 +267,17 @@ def life_extension(park_name: str, park_location: str, commissioning_year_i: int
                               share=plastics, final_amount=lci_materials_i[material] * plastics)
             new_masses_extension[material] = lci_materials_i[material] * plastics
 
+    # add materials to the extension inventory
+    materials_ex = extension_act.new_exchange(input=materials_activity, type='technosphere', amount=1)
+    materials_ex.save()
+    extension_act.save()
+
     consts.PRINTED_WARNING_STEEL = False
 
     # 2. manufacturing
     # create inventory for the manufacturing
-    manufacturing_activity = new_db.new_activity(name=park_name + 'extension_manufacturing',
-                                                 code=park_name + 'extension_manufacturing',
+    manufacturing_activity = new_db.new_activity(name=park_name + '_extension_manufacturing',
+                                                 code=park_name + '_extension_manufacturing',
                                                  location=park_location, unit='unit')
     manufacturing_activity.save()
     new_exc = manufacturing_activity.new_exchange(input=manufacturing_activity.key, amount=1.0, unit="unit",
@@ -296,10 +335,15 @@ def life_extension(park_name: str, park_location: str, commissioning_year_i: int
             ex.save()
             manufacturing_activity.save()
 
+    # add manufacturing to the extension inventory
+    manufacturing_ex = extension_act.new_exchange(input=manufacturing_activity, type='technosphere', amount=1)
+    manufacturing_ex.save()
+    extension_act.save()
+
     # 3. transport
     # create inventory for the transport
-    transport_activity = new_db.new_activity(name=park_name + 'extension_transport',
-                                             code=park_name + 'extension_transport',
+    transport_activity = new_db.new_activity(name=park_name + '_extension_transport',
+                                             code=park_name + '_extension_transport',
                                              location=park_location, unit='unit')
     transport_activity.save()
     new_exc = transport_activity.new_exchange(input=transport_activity.key, amount=1.0, unit="unit",
@@ -307,8 +351,7 @@ def life_extension(park_name: str, park_location: str, commissioning_year_i: int
     new_exc.save()
     transport_activity.save()
 
-    # TODO: continue here
-    for material in new_masses_extension:
+    for material in new_masses_extension.keys():
         if 'Concrete' in material:
             concrete_tkm = new_masses_extension[material] * 2.4 * 50
         elif material == 'Low alloy steel':
@@ -322,6 +365,314 @@ def life_extension(park_name: str, park_location: str, commissioning_year_i: int
             others_tkm = (sum(new_masses_extension.values()) - new_masses_extension['Concrete_foundations']
                           - new_masses_extension['Low alloy steel']) / 1000 * min(distance_dict.keys())
 
+    truck_trans = cutoff391.get(name='market for transport, freight, lorry >32 metric ton, EURO6',
+                                code='508cc8b20d83e7b31af9848e1fb45815', location='RER')
+
+    # add transport to the lci inventory
+    # add steel transport
+    new_exc = transport_activity.new_exchange(input=truck_trans, type='technosphere', amount=steel_tower_tkm)
+    new_exc.save()
+    # add foundations transport
+    new_exc = transport_activity.new_exchange(input=truck_trans, type='technosphere', amount=concrete_tkm)
+    new_exc.save()
+    # add other materials transport
+    new_exc = transport_activity.new_exchange(input=truck_trans, type='technosphere', amount=others_tkm)
+    new_exc.save()
+
+    # add transport to the extension inventory
+    transport_ex = extension_act.new_exchange(input=transport_activity, type='technosphere', amount=1)
+    transport_ex.save()
+    extension_act.save()
+
+    # 4. installation. There is NO installation in a lifetime extension
+
+    # 5. maintenance. Includes inspection trips every 6 months and change oil every two years (oil waste included)
+    # create inventory for the maintenance
+    maintenance_activity = new_db.new_activity(name=park_name + '_extension_maintenance',
+                                               code=park_name + '_extension_maintenance',
+                                               location=park_location, unit='unit')
+    maintenance_activity.save()
+    new_exc = maintenance_activity.new_exchange(input=maintenance_activity.key, amount=1.0, unit="unit",
+                                                type='production')
+    new_exc.save()
+    maintenance_activity.save()
+
+    # Inspection trips
+    inp = cutoff391.get(name='transport, passenger car, large size, diesel, EURO 4',
+                        code='dceed1b2fd31e759a751c6dd912a45f3')
+    ex = maintenance_activity.new_exchange(input=inp, type='technosphere', amount=200 * (lifetime_extension * 2))
+    ex.save()
+    maintenance_activity.save()
+
+    # Change oil and lubrication
+    inp = cutoff391.get(name='market for lubricating oil', code='92391c8c6958ada25b22935e3fa6f06f')
+    ex = maintenance_activity.new_exchange(input=inp, type='technosphere',
+                                           amount=lci_materials_i['Lubricating oil'] * (lifetime_extension / 2))
+    ex.save()
+    maintenance_activity.save()
+    inp = cutoff391.get(name='treatment of waste mineral oil, hazardous waste incineration, with energy recovery',
+                        code='ad6d0f2a8b45536da196238df879077b')
+    ex = maintenance_activity.new_exchange(input=inp, type='technosphere',
+                                           amount=lci_materials_i['Lubricating oil'] * -(lifetime_extension / 2))
+    ex.save()
+    maintenance_activity.save()
+
+    # add maintenance to the extension inventory
+    maintenance_ex = extension_act.new_exchange(input=maintenance_activity, type='technosphere', amount=1)
+    maintenance_ex.save()
+    extension_act.save()
+
+    # 6. eol
+    # create inventory for the eol
+    eol_activity = new_db.new_activity(name=park_name + '_extension_eol',
+                                       code=park_name + '_extension_eol',
+                                       location=park_location, unit='unit')
+    eol_activity.save()
+    new_exc = eol_activity.new_exchange(input=eol_activity.key, amount=1.0, unit="unit",
+                                        type='production')
+    new_exc.save()
+    eol_activity.save()
+
+    # check that the eol is in the range 1-4.
+    if 1 > eol_scenario_extension or eol_scenario_extension > 4:
+        print('There are 4 eol scenarios in WindTrace. You chose a number that is not in the range 1-4. '
+              'By default we applied the baseline scenario')
+        eol_scenario_extension = 1
+
+    # materials classification (according to EoL treatment groups)
+    fe_alloys = ['Low alloy steel', 'Low alloy steel_foundations', 'Chromium steel',
+                 'Chromium steel_foundations', 'Cast iron']
+    copper = ['Copper', 'Copper_foundations']
+    rare_earth_metals = ['Praseodymium', 'Neodymium', 'Dysprosium', 'Terbium', 'Boron']
+    plastics = ['Rubber', 'PUR', 'PVC', 'PE']
+
+    # add materials from the turbine
+    for material in new_masses_extension.keys():
+        # metals
+        if any(element in material for element in fe_alloys):
+            if eol_scenario_extension == 1 or eol_scenario_extension == 2 or eol_scenario_extension == 4:
+                recycling_rate = 0.9
+            # scenario == 3
+            else:
+                recycling_rate = 0.52
+            inp = cutoff391.get(code=consts.EOL_S1_EI391_ACTIVITY_CODES[material]['landfill']['code'])
+            ex = eol_activity.new_exchange(input=inp, type='technosphere',
+                                           amount=new_masses_extension[material] * (-(1 - recycling_rate)))
+            ex.save()
+            eol_activity.save()
+        elif any(element in material for element in copper):
+            if eol_scenario_extension == 1 or eol_scenario_extension == 4:
+                recycling_rate = 0.9
+            elif eol_scenario_extension == 2:
+                recycling_rate = 0.53
+            # scenario == 3
+            else:
+                recycling_rate = 0.42
+            inp = cutoff391.get(code=consts.EOL_S1_EI391_ACTIVITY_CODES[material]['landfill']['code'])
+            ex = eol_activity.new_exchange(input=inp, type='technosphere',
+                                           amount=new_masses_extension[material] * (-(1 - recycling_rate)))
+            ex.save()
+            eol_activity.save()
+        elif 'Aluminium' in material:
+            if eol_scenario_extension == 1 or eol_scenario_extension == 4:
+                recycling_rate = 0.9
+            elif eol_scenario_extension == 2:
+                recycling_rate = 0.7
+            # scenario == 3
+            else:
+                recycling_rate = 0.42
+            inp = cutoff391.get(code=consts.EOL_S1_EI391_ACTIVITY_CODES[material]['landfill']['code'])
+            ex = eol_activity.new_exchange(input=inp, type='technosphere',
+                                           amount=new_masses_extension[material] * (-(1 - recycling_rate)))
+            ex.save()
+            eol_activity.save()
+        elif any(element in material for element in rare_earth_metals):
+            if eol_scenario_extension == 1:
+                recycling_rate = 0
+            elif eol_scenario_extension == 2:
+                recycling_rate = 0.21
+            elif eol_scenario_extension == 3:
+                recycling_rate = 0.01
+            # scenario == 4
+            else:
+                recycling_rate = 0.7
+            inp = cutoff391.get(code=consts.EOL_S1_EI391_ACTIVITY_CODES[material]['landfill']['code'])
+            ex = eol_activity.new_exchange(input=inp, type='technosphere',
+                                           amount=new_masses_extension[material] * (-(1 - recycling_rate)))
+            ex.save()
+            eol_activity.save()
+        elif any(element in material for element in plastics):
+            inp = cutoff391.get(code=consts.EOL_S1_EI391_ACTIVITY_CODES[material]['incineration']['code'])
+            ex = eol_activity.new_exchange(input=inp, type='technosphere', amount=new_masses_extension[material] * (-1))
+            ex.save()
+            eol_activity.save()
+        elif any(element in material for element in ['Epoxy resin', 'Fiberglass']):
+            # NOTE: 10% of glassfiber mass corresponds to the extra mass on the manufacturing process (i.e., waste)
+            # and the waste is not accounted in here.
+            if eol_scenario_extension == 4:
+                inp = cutoff391.get(code=consts.EOL_S1_EI391_ACTIVITY_CODES[material]['incineration']['code'])
+                ex = eol_activity.new_exchange(input=inp, type='technosphere',
+                                               amount=new_masses_extension[material] * (-0.3))
+                ex.save()
+                eol_activity.save()
+            else:
+                inp = cutoff391.get(code=consts.EOL_S1_EI391_ACTIVITY_CODES[material]['incineration']['code'])
+                ex = eol_activity.new_exchange(input=inp, type='technosphere',
+                                               amount=new_masses_extension[material] * (-1))
+                ex.save()
+                eol_activity.save()
+        elif any(element in material for element in ['Lubricating oil', 'Ethyleneglycol']):
+            inp = cutoff391.get(code=consts.EOL_S1_EI391_ACTIVITY_CODES[material]['incineration']['code'])
+            ex = eol_activity.new_exchange(input=inp, type='technosphere', amount=new_masses_extension[material] * (-1))
+            ex.save()
+            eol_activity.save()
+        elif material == 'Concrete_foundations':
+            # concrete modelled separately because the amount is in m3 and the landfill activity in kg
+            # we use the density (2400 kg/m3)
+            if eol_scenario_extension == 4:
+                inp = cutoff391.get(code=consts.EOL_S1_EI391_ACTIVITY_CODES[material]['landfill']['code'])
+                ex = eol_activity.new_exchange(input=inp, type='technosphere',
+                                               amount=new_masses_extension[material] * (-2400 * 0.5))
+                ex.save()
+                eol_activity.save()
+            else:
+                inp = cutoff391.get(code=consts.EOL_S1_EI391_ACTIVITY_CODES[material]['landfill']['code'])
+                ex = eol_activity.new_exchange(input=inp, type='technosphere',
+                                               amount=new_masses_extension[material] * (-2400))
+                ex.save()
+                eol_activity.save()
+        else:
+            if eol_scenario_extension == 4:
+                inp = cutoff391.get(code=consts.EOL_S1_EI391_ACTIVITY_CODES[material]['landfill']['code'])
+                ex = eol_activity.new_exchange(input=inp, type='technosphere',
+                                               amount=-new_masses_extension[material] * 0.5)
+                ex.save()
+                eol_activity.save()
+            else:
+                inp = cutoff391.get(code=consts.EOL_S1_EI391_ACTIVITY_CODES[material]['landfill']['code'])
+                ex = eol_activity.new_exchange(input=inp, type='technosphere', amount=-new_masses_extension[material])
+                ex.save()
+                eol_activity.save()
+
+    # add eol to the extension inventory
+    eol_ex = extension_act.new_exchange(input=eol_activity, type='technosphere', amount=1)
+    eol_ex.save()
+    extension_act.save()
+
+    return extension_act
+
+
+def extension_wind_park(park_name: str, park_location: str, number_of_turbines_extended: int,
+                        extension_turbine_act):
+    """
+    It creates a wind park extension activity and adds the turbines as inputs. During a lifetime extension there
+    is no need to update intra-array cables or transformer.
+    """
+    try:
+        # create inventory for the wind park lifetime extension
+        extension_park_act = new_db.new_activity(name=park_name + '_park_extension', code=park_name + '_park_extension',
+                                                 location=park_location, unit='unit')
+        extension_park_act.save()
+        new_exc = extension_park_act.new_exchange(input=extension_park_act.key, amount=1.0, unit="unit",
+                                                  type='production')
+        new_exc.save()
+        extension_park_act.save()
+    except bd.errors.DuplicateNode:
+        print(f'An inventory for a park with the name {park_name} was already created before in the database "new_db"')
+        print('Give another name to the wind park. Otherwise, you may want to delete '
+              'the content of "new_db" by running delete_new_db().')
+        print(
+            'WARNING: if you run delete_new_db() '
+            'ALL WIND PARKS STORED IN THAT DATABASE WILL '
+            'BE DELETED!')
+        sys.exit()
+
+    # add the turbines
+    new_exc = extension_park_act.new_exchange(input=extension_turbine_act, amount=number_of_turbines_extended,
+                                              unit="unit", type='technosphere')
+    new_exc.save()
+    extension_park_act.save()
+
+    return extension_park_act
+
+
+def electricity_production_activities(park_name: str, park_location: str, park_power: float, turbine_power: float,
+                                      lifetime_extended: int,
+                                      cf_extended: float, time_adjusted_cf_extended: float,
+                                      turbine_extended_act, park_extended_act):
+    # Create electricity_production activity per turbine and per park (FU: kWh)
+    try:
+        # turbine
+        if time_adjusted_cf_extended != 0:
+            cf_comment = 'CF: ' + str(cf_extended) + '. Attrition rate: ' + str(time_adjusted_cf_extended)
+        else:
+            cf_comment = 'CF: ' + str(cf_extended) + '. Constant CF (no attrition rate)'
+        elec_prod_turbine_act = new_db.new_activity(name=park_name + '_turbine_extended_kwh',
+                                                    code=park_name + '_turbine_extended_kwh',
+                                                    location=park_location, unit='kilowatt hour', comment=cf_comment)
+        elec_prod_turbine_act.save()
+        new_exc = elec_prod_turbine_act.new_exchange(input=elec_prod_turbine_act.key, amount=1.0, unit='kilowatt hour',
+                                                     type='production')
+        new_exc.save()
+        # park
+        elec_prod_park_act = new_db.new_activity(name=park_name + '_park_extended_kwh',
+                                                 code=park_name + '_park_extended_kwh',
+                                                 location=park_location, unit='kilowatt hour', comment=cf_comment)
+        elec_prod_park_act.save()
+        new_exc = elec_prod_park_act.new_exchange(input=elec_prod_park_act.key, amount=1.0, unit='kilowatt hour',
+                                                  type='production')
+        new_exc.save()
+    except bd.errors.DuplicateNode:
+        print(f'An inventory for a park with the name {park_name} was already created before in the database "new_db"')
+        print('Give another name to the wind park. Otherwise, you may want to delete '
+              'the content of "new_db" by running delete_new_db().')
+        print(
+            'WARNING: if you run delete_new_db() '
+            'ALL WIND PARKS STORED IN THAT DATABASE WILL '
+            'BE DELETED!')
+        sys.exit()
+
+    # add infrastructure
+    elec_turbine, elec_park = electricity_production(park_power=park_power,
+                                                     cf=cf_extended, time_adjusted_cf=time_adjusted_cf_extended,
+                                                     lifetime=lifetime_extended, turbine_power=turbine_power)
+    # to turbine activity
+    turbine_amount = 1 / elec_turbine
+    new_exc = elec_prod_turbine_act.new_exchange(input=turbine_extended_act, amount=turbine_amount, type='technosphere')
+    new_exc.save()
+    elec_prod_turbine_act.save()
+    # to park activity
+    park_amount = 1 / elec_park
+    new_exc = elec_prod_park_act.new_exchange(input=park_extended_act, amount=park_amount, type='technosphere')
+    new_exc.save()
+    elec_prod_park_act.save()
+
+
+def electricity_production(park_power: float,
+                           cf: float, time_adjusted_cf: float,
+                           lifetime: int, turbine_power: float):
+    if time_adjusted_cf == 0:
+        print('Constant cf (time-adjusted cf not applied)')
+        elec_prod_turbine = cf * lifetime * 365 * 24 * turbine_power / 1000
+        elec_prod_park = cf * lifetime * 365 * 24 * park_power / 1000
+    else:
+        # adjust a decay in yearly production according to CFage = CF2 * (1-time_adjusted_cf)^age [Xu et al. (2023)]
+        print('Time-adjusted cf applied with an attrition coefficient of ' + str(time_adjusted_cf))
+        year = 1
+        adjusted_time = []
+        while year <= lifetime:
+            if year == 1:
+                yearly_adjusted_time = 1
+            else:
+                yearly_adjusted_time = (1 - time_adjusted_cf) ** year
+            adjusted_time.append(yearly_adjusted_time)
+            year += 1
+        adjusted_time = sum(adjusted_time)
+        elec_prod_turbine = cf * 365 * 24 * turbine_power * adjusted_time * 1000
+        elec_prod_park = cf * 365 * 24 * park_power * adjusted_time * 1000
+
+    return elec_prod_turbine, elec_prod_park
+
 
 LONG_EXTENSION = {'steel': 0.08, 'c_steel': 0.08, 'iron': 1, 'aluminium': 0.65, 'copper': 0.81,
                   'plastics': 1, 'others': 1, 'foundations': 0, 'electronics_and_electrics': 0}
@@ -329,11 +680,44 @@ SHORT_EXTENSION = {'steel': 0.01, 'c_steel': 0.01, 'iron': 0.34, 'aluminium': 0,
                    'plastics': 0.91, 'others': 0, 'foundations': 0, 'electronics_and_electrics': 0}
 REPLACEMENT_BASELINE = {'steel': 0.84, 'c_steel': 0.84}
 
+
+def test(park_name: str, extension: bool,
+         lci_phase: Optional[Literal['materials', 'manufacturing', 'transport', 'installation', 'maintenance', 'eol']]):
+    turbine_ex = None
+    turbine_kwh_ex = None
+    park_ex = None
+    park_kwh_ex = None
+    lci_phase_ex = None
+    if extension and not lci_phase:
+        # turbine
+        name_turbine = park_name + '_extension'
+        name_turbine_kwh = park_name + '_turbine_extended_kwh'
+        turbine_act = new_db.get(name_turbine)
+        turbine_kwh_act = new_db.get(name_turbine_kwh)
+        turbine_ex = [e for e in turbine_act.technosphere()]
+        turbine_kwh_ex = [e for e in turbine_kwh_act.technosphere()]
+        # park
+        name_park = park_name + '_park_extension'
+        name_park_kwh = park_name + '_park_extended_kwh'
+        park_act = new_db.get(name_park)
+        park_kwh_act = new_db.get(name_park_kwh)
+        park_ex = [e for e in turbine_act.technosphere()]
+        park_kwh_ex = [e for e in park_kwh_act.technosphere()]
+
+    elif extension and lci_phase:
+        # turbine lci phases
+        name_turbine_phase = park_name + '_extension_' + lci_phase
+        lci_phase_act = new_db.get(name_turbine_phase)
+        lci_phase_ex = [e for e in lci_phase_act.technosphere()]
+
+    return turbine_ex, turbine_kwh_ex, park_ex, park_kwh_ex, lci_phase_ex
+
+
 pass
 
 # example of use:
 lci_repowering(extension_long=True, extension_short=False, repowering=False, substitution=False,
-               park_name_i='repowering_test_23', park_power_i=2.0, number_of_turbines_i=1, park_location_i='ES',
+               park_name_i='repowering_test_26', park_power_i=2.0, number_of_turbines_i=1, park_location_i='ES',
                park_coordinates_i=(53.43568404210107, 11.214208299339631),
                manufacturer_i='Vestas',
                rotor_diameter_i=120,
@@ -342,6 +726,9 @@ lci_repowering(extension_long=True, extension_short=False, repowering=False, sub
                lifetime_i=20,
                electricity_mix_steel_i=None,
                generator_type_i='gb_dfig',
-               )
+               cf_extended=0.30,
+               lifetime_extension=5,
+               number_of_turbines_extended=1,
+               time_adjusted_cf_extended=0.09)
 
 pass
