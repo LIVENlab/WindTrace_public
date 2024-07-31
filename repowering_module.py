@@ -1,8 +1,6 @@
 import sys
-
 import numpy as np
 from geopy.distance import geodesic
-
 import WindTrace_onshore
 from typing import Optional, Literal
 import bw2data as bd
@@ -78,6 +76,46 @@ def lci_repowering(extension_long: bool, extension_short: bool, substitution: bo
     if (extension_short or extension_long) and repowering:
         year_of_repowering = year_of_repowering + lifetime_extension
 
+    # print the type of eol (e.g., short lifetime extension + repowering)
+    if extension_short and repowering:
+        print(f'You opted for a short lifetime extension ({lifetime_extension} years) and a repowering')
+        print(f'The initial turbine was commissioned in {commissioning_year_i}')
+        print(f'The lifetime extension will start in {year_of_extension}')
+        print(f'The repowering will start in {year_of_repowering}')
+    elif extension_short and substitution:
+        print(f'You opted for a short lifetime extension ({lifetime_extension} years) and a substitution')
+        print(f'The initial turbine was commissioned in {commissioning_year_i}')
+        print(f'The lifetime extension will start in {year_of_extension}')
+        print(f'The substitution will start in {year_of_repowering}')
+    elif extension_long and repowering:
+        print(f'You opted for a long lifetime extension ({lifetime_extension} years) and a repowering')
+        print(f'The initial turbine was commissioned in {commissioning_year_i}')
+        print(f'The lifetime extension will start in {year_of_extension}')
+        print(f'The repowering will start in {year_of_repowering}')
+    elif extension_long and substitution:
+        print(f'You opted for a long lifetime extension ({lifetime_extension} years) and a substitution')
+        print(f'The initial turbine was commissioned in {commissioning_year_i}')
+        print(f'The lifetime extension will start in {year_of_extension}')
+        print(f'The substitution will start in {year_of_repowering}')
+    elif extension_short and not (repowering or substitution):
+        print(f'You opted for a short lifetime extension ({lifetime_extension} years) with no substitution or '
+              f'repowering afterwards')
+        print(f'The initial turbine was commissioned in {commissioning_year_i}')
+        print(f'The lifetime extension will start in {year_of_extension}')
+    elif extension_long and not (repowering or substitution):
+        print(f'You opted for a long lifetime extension ({lifetime_extension} years) with no substitution or '
+              f'repowering afterwards')
+        print(f'The initial turbine was commissioned in {commissioning_year_i}')
+        print(f'The lifetime extension will start in {year_of_extension}')
+    elif repowering and not (extension_short or extension_long):
+        print(f'You opted for a repowering, without a previous lifetime extension')
+        print(f'The initial turbine was commissioned in {commissioning_year_i}')
+        print(f'The repowering will start in {year_of_repowering}')
+    elif substitution and not (extension_short or extension_long):
+        print(f'You opted for a substitution, without a previous lifetime extension')
+        print(f'The initial turbine was commissioned in {commissioning_year_i}')
+        print(f'The substitution will start in {year_of_repowering}')
+
     #### initial turbine ####
     # It creates the activities 'park_name_single_turbine' (code: 'park_name_single_turbine'),
     # 'park_name_cables' (code: 'park_name_intra_cables') and park (park_name) (code: park_name) in the
@@ -141,9 +179,37 @@ def lci_repowering(extension_long: bool, extension_short: bool, substitution: bo
                                           time_adjusted_cf_extended=time_adjusted_cf_extension,
                                           lifetime_extended=lifetime_extension, cf_extended=cf_extension,
                                           park_extended_act=park_extended_act, turbine_extended_act=turbine_act)
-    if substitution:
+    if substitution and not (extension_short or extension_long):
         turbine_act = life_extension(park_name=park_name_i, park_location=park_location_i,
                                      commissioning_year_i=commissioning_year_i, lifetime_i=lifetime_i,
+                                     hub_height_i=hub_height_i, turbine_power_i=turbine_power_i,
+                                     manufacturer_i=manufacturer_i, park_coordinates_i=park_coordinates_i,
+                                     steel=consts.REPLACEMENT_BASELINE['steel'],
+                                     c_steel=consts.REPLACEMENT_BASELINE['c_steel'],
+                                     iron=consts.REPLACEMENT_BASELINE['iron'],
+                                     aluminium=consts.REPLACEMENT_BASELINE['aluminium'],
+                                     copper=consts.REPLACEMENT_BASELINE['copper'],
+                                     plastics=consts.REPLACEMENT_BASELINE['plastics'],
+                                     others=consts.REPLACEMENT_BASELINE['others'],
+                                     foundations=consts.REPLACEMENT_BASELINE['foundations'],
+                                     electronics_and_electrics=consts.REPLACEMENT_BASELINE['electronics_and_electrics'],
+                                     lci_materials_i=lci_materials, lifetime_extension=lifetime_extension,
+                                     recycled_share_extension=recycled_share_steel_extension_or_repowering,
+                                     substitution=substitution, year_of_extension=year_of_extension)
+        park_extended_act = extension_wind_park(park_location=park_location_i, park_name=park_name_i,
+                                                extension_turbine_act=turbine_act,
+                                                number_of_turbines_extended=number_of_turbines_extension,
+                                                substitution=substitution)
+        electricity_production_activities(park_name=park_name_i, park_location=park_location_i, park_power=park_power_i,
+                                          turbine_power=turbine_power_i,
+                                          time_adjusted_cf_extended=time_adjusted_cf_extension,
+                                          lifetime_extended=lifetime_extension, cf_extended=cf_extension,
+                                          park_extended_act=park_extended_act, turbine_extended_act=turbine_act,
+                                          substitution=substitution)
+    elif substitution and (extension_short or extension_long):
+        # change the commissioning year to the year when the life extension ends
+        turbine_act = life_extension(park_name=park_name_i, park_location=park_location_i,
+                                     commissioning_year_i=year_of_extension, lifetime_i=lifetime_i,
                                      hub_height_i=hub_height_i, turbine_power_i=turbine_power_i,
                                      manufacturer_i=manufacturer_i, park_coordinates_i=park_coordinates_i,
                                      steel=consts.REPLACEMENT_BASELINE['steel'],
@@ -809,8 +875,8 @@ def test(park_name: str, extension: bool,
 
 pass
 
-# example of use:
-lci_repowering(extension_long=True, extension_short=False, substitution=False,
+# example of use lifetime extension long:
+lci_repowering(extension_long=True, extension_short=False, substitution=False, repowering=False,
                park_name_i='repowering_test_26', park_power_i=2.0, number_of_turbines_i=1,
                park_location_i='ES',
                park_coordinates_i=(53.43568404210107, 11.214208299339631),
@@ -824,6 +890,6 @@ lci_repowering(extension_long=True, extension_short=False, substitution=False,
                cf_extension=0.30,
                lifetime_extension=5,
                number_of_turbines_extension=1,
-               time_adjusted_cf_extension=0.09)
+               time_adjusted_cf_extension=0.09, )
 
 pass
