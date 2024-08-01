@@ -1,5 +1,6 @@
 import sys
 import numpy as np
+import pandas as pd
 from geopy.distance import geodesic
 import WindTrace_onshore
 from typing import Optional, Literal
@@ -132,7 +133,7 @@ def lci_repowering(extension_long: bool, extension_short: bool, substitution: bo
                                                     electricity_mix_steel=electricity_mix_steel_i,
                                                     generator_type=generator_type_i, include_life_cycle_stages=True)
 
-    if extension_long:
+    if extension_long and not substitution:
         turbine_act = life_extension(park_name=park_name_i, park_location=park_location_i,
                                      hub_height_i=hub_height_i, turbine_power_i=turbine_power_i,
                                      manufacturer_i=manufacturer_i, park_coordinates_i=park_coordinates_i,
@@ -156,7 +157,7 @@ def lci_repowering(extension_long: bool, extension_short: bool, substitution: bo
                                           lifetime_extended=lifetime_extension, cf_extended=cf_extension,
                                           park_extended_act=park_extended_act, turbine_extended_act=turbine_act)
 
-    elif extension_short:
+    elif extension_short and not substitution:
         turbine_act = life_extension(park_name=park_name_i, park_location=park_location_i,
                                      hub_height_i=hub_height_i, turbine_power_i=turbine_power_i,
                                      manufacturer_i=manufacturer_i, park_coordinates_i=park_coordinates_i,
@@ -179,6 +180,60 @@ def lci_repowering(extension_long: bool, extension_short: bool, substitution: bo
                                           time_adjusted_cf_extended=time_adjusted_cf_extension,
                                           lifetime_extended=lifetime_extension, cf_extended=cf_extension,
                                           park_extended_act=park_extended_act, turbine_extended_act=turbine_act)
+
+    if extension_long and substitution:
+        # if substitution is not set to False, the extension activity is given the name '_substitution'
+        substitution = False
+        turbine_act = life_extension(park_name=park_name_i, park_location=park_location_i,
+                                     hub_height_i=hub_height_i, turbine_power_i=turbine_power_i,
+                                     manufacturer_i=manufacturer_i, park_coordinates_i=park_coordinates_i,
+                                     steel=consts.LONG_EXTENSION['steel'], c_steel=consts.LONG_EXTENSION['c_steel'],
+                                     iron=consts.LONG_EXTENSION['iron'],
+                                     aluminium=consts.LONG_EXTENSION['aluminium'],
+                                     copper=consts.LONG_EXTENSION['copper'],
+                                     plastics=consts.LONG_EXTENSION['plastics'],
+                                     others=consts.LONG_EXTENSION['others'],
+                                     foundations=consts.LONG_EXTENSION['foundations'],
+                                     electronics_and_electrics=consts.LONG_EXTENSION['electronics_and_electrics'],
+                                     lci_materials_i=lci_materials, lifetime_extension=lifetime_extension,
+                                     recycled_share_extension=recycled_share_steel_extension_or_repowering,
+                                     substitution=substitution, year_of_extension=year_of_extension)
+        park_extended_act = extension_wind_park(park_location=park_location_i, park_name=park_name_i,
+                                                extension_turbine_act=turbine_act,
+                                                number_of_turbines_extended=number_of_turbines_extension)
+        electricity_production_activities(park_name=park_name_i, park_location=park_location_i, park_power=park_power_i,
+                                          turbine_power=turbine_power_i,
+                                          time_adjusted_cf_extended=time_adjusted_cf_extension,
+                                          lifetime_extended=lifetime_extension, cf_extended=cf_extension,
+                                          park_extended_act=park_extended_act, turbine_extended_act=turbine_act)
+        substitution = True
+
+    elif extension_short and substitution:
+        substitution = False
+        turbine_act = life_extension(park_name=park_name_i, park_location=park_location_i,
+                                     hub_height_i=hub_height_i, turbine_power_i=turbine_power_i,
+                                     manufacturer_i=manufacturer_i, park_coordinates_i=park_coordinates_i,
+                                     steel=consts.SHORT_EXTENSION['steel'], c_steel=consts.SHORT_EXTENSION['c_steel'],
+                                     iron=consts.SHORT_EXTENSION['iron'],
+                                     aluminium=consts.SHORT_EXTENSION['aluminium'],
+                                     copper=consts.SHORT_EXTENSION['copper'],
+                                     plastics=consts.SHORT_EXTENSION['plastics'],
+                                     others=consts.SHORT_EXTENSION['others'],
+                                     foundations=consts.SHORT_EXTENSION['foundations'],
+                                     electronics_and_electrics=consts.SHORT_EXTENSION['electronics_and_electrics'],
+                                     lci_materials_i=lci_materials, lifetime_extension=lifetime_extension,
+                                     recycled_share_extension=recycled_share_steel_extension_or_repowering,
+                                     substitution=substitution, year_of_extension=year_of_extension)
+        park_extended_act = extension_wind_park(park_location=park_location_i, park_name=park_name_i,
+                                                extension_turbine_act=turbine_act,
+                                                number_of_turbines_extended=number_of_turbines_extension)
+        electricity_production_activities(park_name=park_name_i, park_location=park_location_i, park_power=park_power_i,
+                                          turbine_power=turbine_power_i,
+                                          time_adjusted_cf_extended=time_adjusted_cf_extension,
+                                          lifetime_extended=lifetime_extension, cf_extended=cf_extension,
+                                          park_extended_act=park_extended_act, turbine_extended_act=turbine_act)
+        substitution = True
+
     if substitution and not (extension_short or extension_long):
         turbine_act = life_extension(park_name=park_name_i, park_location=park_location_i,
                                      hub_height_i=hub_height_i, turbine_power_i=turbine_power_i,
@@ -205,6 +260,7 @@ def lci_repowering(extension_long: bool, extension_short: bool, substitution: bo
                                           lifetime_extended=lifetime_substitution, cf_extended=cf_substitution,
                                           park_extended_act=park_extended_act, turbine_extended_act=turbine_act,
                                           substitution=substitution)
+
     elif substitution and (extension_short or extension_long):
         # change the commissioning year to the year when the life extension ends
         turbine_act = life_extension(park_name=park_name_i, park_location=park_location_i,
@@ -836,8 +892,9 @@ def electricity_production(park_power: float,
     return elec_prod_turbine, elec_prod_park
 
 
-def test(park_name: str, extension: bool,
-         lci_phase: Optional[Literal['materials', 'manufacturing', 'transport', 'installation', 'maintenance', 'eol']]):
+def test(park_name: str, extension: bool, repowering: bool, substitution: bool,
+         lci_phase: Optional[Literal['materials', 'manufacturing', 'transport', 'installation', 'maintenance', 'eol']],
+         park_power: float = None):
     turbine_ex = None
     turbine_kwh_ex = None
     park_ex = None
@@ -849,25 +906,149 @@ def test(park_name: str, extension: bool,
         name_turbine_kwh = park_name + '_turbine_extension_kwh'
         turbine_act = new_db.get(name_turbine)
         turbine_kwh_act = new_db.get(name_turbine_kwh)
-        turbine_ex = [e for e in turbine_act.technosphere()]
-        turbine_kwh_ex = [e for e in turbine_kwh_act.technosphere()]
+        turbine_ex = [e for e in turbine_act.exchanges()]
+        turbine_kwh_ex = [e for e in turbine_kwh_act.exchanges()]
         # park
         name_park = park_name + '_park_extension'
         name_park_kwh = park_name + '_park_extension_kwh'
         park_act = new_db.get(name_park)
         park_kwh_act = new_db.get(name_park_kwh)
-        park_ex = [e for e in turbine_act.technosphere()]
-        park_kwh_ex = [e for e in park_kwh_act.technosphere()]
+        park_ex = [e for e in park_act.exchanges()]
+        park_kwh_ex = [e for e in park_kwh_act.exchanges()]
 
     elif extension and lci_phase:
         # turbine lci phases
         name_turbine_phase = park_name + '_extension_' + lci_phase
         lci_phase_act = new_db.get(name_turbine_phase)
-        lci_phase_ex = [e for e in lci_phase_act.technosphere()]
+        lci_phase_ex = [e for e in lci_phase_act.exchanges()]
+    if substitution and not lci_phase:
+        # turbine
+        name_turbine = park_name + '_substitution'
+        name_turbine_kwh = park_name + '_turbine_substitution_kwh'
+        turbine_act = new_db.get(name_turbine)
+        turbine_kwh_act = new_db.get(name_turbine_kwh)
+        turbine_ex = [e for e in turbine_act.exchanges()]
+        turbine_kwh_ex = [e for e in turbine_kwh_act.exchanges()]
+        # park
+        name_park = park_name + '_park_substitution'
+        name_park_kwh = park_name + '_park_substitution_kwh'
+        park_act = new_db.get(name_park)
+        park_kwh_act = new_db.get(name_park_kwh)
+        park_ex = [e for e in park_act.exchanges()]
+        park_kwh_ex = [e for e in park_kwh_act.exchanges()]
+
+    elif substitution and lci_phase:
+        # turbine lci phases
+        name_turbine_phase = park_name + '_substitution_' + lci_phase
+        lci_phase_act = new_db.get(name_turbine_phase)
+        lci_phase_ex = [e for e in lci_phase_act.exchanges()]
+    elif repowering and not lci_phase:
+        # turbine
+        name_turbine = park_name + '_repowering_single_turbine'
+        name_turbine_kwh = park_name + '_repowering_turbine_kwh'
+        turbine_act = new_db.get(name_turbine)
+        turbine_kwh_act = new_db.get(name_turbine_kwh)
+        turbine_ex = [e for e in turbine_act.exchanges()]
+        turbine_kwh_ex = [e for e in turbine_kwh_act.exchanges()]
+        # park
+        name_park = park_name + f'_repowering_{str(park_power)}'
+        name_park_kwh = park_name + '_repowering_park_kwh'
+        park_act = new_db.get(name_park)
+        park_kwh_act = new_db.get(name_park_kwh)
+        park_ex = [e for e in park_act.exchanges()]
+        park_kwh_ex = [e for e in park_kwh_act.exchanges()]
+    elif repowering and lci_phase:
+        # turbine lci phases
+        name_turbine_phase = park_name + '_repowering_' + lci_phase
+        lci_phase_act = new_db.get(name_turbine_phase)
+        lci_phase_ex = [e for e in lci_phase_act.exchanges()]
 
     return turbine_ex, turbine_kwh_ex, park_ex, park_kwh_ex, lci_phase_ex
 
 
+def lci_excel_output(park_name, extension, repowering, substitution, lci_phase, park_power, file_path):
+    with pd.ExcelWriter(file_path, engine='xlsxwriter') as writer:
+        for lci_phase in ['materials', 'manufacturing', 'transport', 'installation', 'maintenance', 'eol', False]:
+            if extension and lci_phase:
+                if lci_phase == 'materials':
+                    output = test(park_name=park_name, extension=extension,
+                                  repowering=False, substitution=False, park_power=10.0, lci_phase=lci_phase)
+                    amount = []
+                    unit = []
+                    input_act = []
+                    act_names = ['Steel', 'Chromium steel', 'Iron', 'Aluminium', 'Copper', 'Epoxy resin', 'Rubber',
+                                 'PUR', 'PVC', 'Glass fiber', 'Electronics', 'Electrics', 'Lubricating oil',
+                                 'Reinforcing steel', 'Chromium steel', 'Concrete', 'Praseodymium', 'Neodymium',
+                                 'Dysprosium', 'Terbium', 'Boron', 'PE']
+                    for ex in output[4]:
+                        if ex._data['type'] != 'production':
+                            amount.append(ex.amount)
+                            unit.append(ex.unit)
+                            input_act.append(str(ex.input))
+
+                    data_dict = {
+                        'amount': amount,
+                        'unit': unit,
+                        'input': act_names,
+                        'input (bw2 activity)': input_act
+                    }
+                    df = pd.DataFrame(data_dict)
+                    sheet_name = f'{lci_phase}_extension'
+                    df.to_excel(writer, sheet_name=sheet_name, index=False)
+                elif lci_phase != 'installation':
+                    output = test(park_name=park_name, extension=extension,
+                                  repowering=False, substitution=False, park_power=10.0, lci_phase=lci_phase)
+                    amount = []
+                    unit = []
+                    input_act = []
+                    for ex in output[4]:
+                        if ex._data['type'] != 'production':
+                            amount.append(ex.amount)
+                            unit.append(ex.unit)
+                            input_act.append(str(ex.input))
+
+                    data_dict = {
+                        'amount': amount,
+                        'unit': unit,
+                        'input (bw2 activity)': input_act
+                    }
+                    df = pd.DataFrame(data_dict)
+                    sheet_name = f'{lci_phase}_extension'
+                    df.to_excel(writer, sheet_name=sheet_name, index=False)
+            elif extension and not lci_phase:
+                sheet_names = {0: 'turbine extension (FU unit)', 1: 'turbine extension (FU kWh)',
+                               2: 'park extension (FU unit)', 3: 'park extension (FU kWh)'}
+                output = test(park_name=park_name, extension=extension,
+                              repowering=False, substitution=False, park_power=10.0, lci_phase=None)
+
+                for i, out in enumerate(output[:4]):
+                    amount = []
+                    unit = []
+                    input_act = []
+                    input_name = []
+                    for ex in out:
+                        if ex._data['type'] != 'production':
+                            amount.append(ex.amount)
+                            unit.append(ex.unit)
+                            input_act.append(str(ex.input))
+
+                            start_position = str(ex.input).find(park_name) + len(park_name) + 1
+                            name = str(ex.input)[start_position:].split("'")[0]
+                            input_name.append(name)
+
+                    data_dict = {
+                        'amount': amount,
+                        'unit': unit,
+                        'input': input_name,
+                        'input (bw2 activity)': input_act
+                    }
+                    df = pd.DataFrame(data_dict)
+                    sheet_name = f'{sheet_names[i]}'
+                    df.to_excel(writer, sheet_name=sheet_name, index=False)
+
+
+# lci_excel_output(park_name='test_102_long', extension=True, repowering=False, substitution=False, lci_phase=None,
+# park_power=0.0, file_path=r'C:\Users\1361185\OneDrive - UAB\PhD_ICTA_Miquel\lci_wind_modelling\repowering\test.xlsx')
 pass
 
 # example of use lifetime extension long (no substitution or repowering):
@@ -956,5 +1137,30 @@ lci_repowering(extension_long=True, extension_short=False, substitution=True, re
                lifetime_substitution=20, number_of_turbines_substitution=5,
                cf_substitution=0.35, time_adjusted_cf_substitution=0.009)
 
+# example of use long lifetime extension AND repowering:
+lci_repowering(extension_long=True, extension_short=False, substitution=False, repowering=True,
+               park_name_i='test_101_extension_repowering', park_power_i=10.0, number_of_turbines_i=5,
+               park_location_i='ES',
+               park_coordinates_i=(53.43568404210107, 11.214208299339631),
+               manufacturer_i='Vestas',
+               rotor_diameter_i=120,
+               turbine_power_i=2.0, hub_height_i=120, commissioning_year_i=2009,
+               recycled_share_steel_i=None,
+               lifetime_i=20,
+               electricity_mix_steel_i=None,
+               generator_type_i='gb_dfig',
+               lifetime_extension=5, number_of_turbines_extension=5,
+               cf_extension=0.30, time_adjusted_cf_extension=0.009,
+               park_power_repowering=15.0,
+               number_of_turbines_repowering=3,
+               manufacturer_repowering='Siemens Gamesa',
+               rotor_diameter_repowering=130,
+               turbine_power_repowering=5.0,
+               hub_height_repowering=140,
+               generator_type_repowering='dd_pmsg',
+               electricity_mix_steel_repowering='Norway',
+               lifetime_repowering=25,
+               cf_repowering=0.4,
+               attrition_rate_repowering=0.009)
 
 pass
