@@ -712,7 +712,8 @@ def lci_materials(park_name: str, park_power: float, number_of_turbines: int, pa
                   lifetime: int = 20,
                   electricity_mix_steel: Optional[Literal['Norway', 'Europe', 'Poland']] = None,
                   generator_type: Literal['dd_eesg', 'dd_pmsg', 'gb_pmsg', 'gb_dfig'] = 'gb_dfig',
-                  include_life_cycle_stages: bool = True):
+                  include_life_cycle_stages: bool = True,
+                  comment: str = ''):
     """
     It creates the activities 'park_name_single_turbine' (code: 'park_name_single_turbine'),
     'park_name_cables' (code: 'park_name_intra_cables') and park (park_name) (code: park_name) in the
@@ -724,7 +725,7 @@ def lci_materials(park_name: str, park_power: float, number_of_turbines: int, pa
     # create the turbine activity and cables activity in bw2 including the production exchange
     try:
         turbine_act = new_db.new_activity(name=park_name + '_single_turbine', code=park_name + '_single_turbine',
-                                          location=park_location, unit='unit')
+                                          location=park_location, unit='unit', comment=comment)
         turbine_act.save()
         new_exc = turbine_act.new_exchange(input=turbine_act.key, amount=1.0, unit="unit", type='production')
         new_exc.save()
@@ -1540,7 +1541,8 @@ def lci_wind_turbine(park_name: str, park_power: float, number_of_turbines: int,
                      cf: float = 0.24, time_adjusted_cf: float = 0.009,
                      include_life_cycle_stages: bool = True,
                      eol: bool = True, transportation: bool = True,
-                     use_and_maintenance: bool = True, installation: bool = True):
+                     use_and_maintenance: bool = True, installation: bool = True,
+                     comment: str = ''):
     """
     It creates the life-cycle inventories per unit (turbine and wind park) and per kwh (also turbine and wind park)
     and store them as activities in the database new_db.
@@ -1577,7 +1579,7 @@ def lci_wind_turbine(park_name: str, park_power: float, number_of_turbines: int,
                                         lifetime=lifetime,
                                         turbine_power=turbine_power,
                                         hub_height=hub_height, commissioning_year=commissioning_year,
-                                        include_life_cycle_stages=include_life_cycle_stages)
+                                        include_life_cycle_stages=include_life_cycle_stages, comment=comment)
     if transportation:
         transport(manufacturer=manufacturer, park_coordinates=park_coordinates, park_name=park_name,
                   generator_type=generator_type, turbine_power=turbine_power, hub_height=hub_height,
