@@ -1,9 +1,10 @@
+import re
 import sys
 import numpy as np
 import pandas as pd
 from geopy.distance import geodesic
 import WindTrace_onshore
-from typing import Optional, Literal
+from typing import Optional, Literal, Tuple
 import bw2data as bd
 import bw2io as bi
 import consts
@@ -928,6 +929,125 @@ def electricity_production(park_power: float,
     return elec_prod_turbine, elec_prod_park
 
 
+def lca_wind_repowering(park_name: str, park_power: float, extension: bool, repowering: bool, substitution: bool,
+                     method: str = 'ReCiPe 2016 v1.03, midpoint (H)',
+                     indicators: Optional[Tuple[str, str, str]] = None):
+    """
+    Based on LCIs previously built with the function lci_wind_turbine, it creates a dictionary (total_park_results)
+    with the lca score results of the total park. The dictionary follows this structure:
+    total_park_results = {'method_1': park_score,
+                          'method_2': park_score}
+    Default turbine=True, it means that we calculate the impacts for the FU = 1 turbine.
+    In case of wanting the impacts from the park: set turbine=False.
+    """
+    if indicators is None:
+        indicators = []
+
+    # setting the methods
+    if indicators:
+        methods = indicators
+    else:
+        methods = [m for m in bd.methods if method in m[0] and 'no LT' not in m[0]]
+
+    results_acts = {}
+    for lci_phase in ['materials', 'manufacturing', 'transport', 'installation', 'maintenance', 'eol', False]:
+        turbine_act = False
+        if extension and not lci_phase:
+            # turbine
+            name_turbine = park_name + '_extension'
+            name_turbine_kwh = park_name + '_turbine_extension_kwh'
+            turbine_act = new_db.get(name_turbine)
+            turbine_kwh_act = new_db.get(name_turbine_kwh)
+
+            # park
+            name_park = park_name + '_park_extension'
+            name_park_kwh = park_name + '_park_extension_kwh'
+            park_act = new_db.get(name_park)
+            park_kwh_act = new_db.get(name_park_kwh)
+
+            name_surname = 'extension'
+
+        elif extension and lci_phase:
+            if lci_phase == 'installation':
+                continue
+            # turbine lci phases
+            name_turbine_phase = park_name + '_extension_' + lci_phase
+            lci_phase_act = new_db.get(name_turbine_phase)
+
+            name_surname = 'extension'
+
+        if substitution and not lci_phase:
+            # turbine
+            name_turbine = park_name + '_substitution'
+            name_turbine_kwh = park_name + '_turbine_substitution_kwh'
+            turbine_act = new_db.get(name_turbine)
+            turbine_kwh_act = new_db.get(name_turbine_kwh)
+
+            # park
+            name_park = park_name + '_park_substitution'
+            name_park_kwh = park_name + '_park_substitution_kwh'
+            park_act = new_db.get(name_park)
+            park_kwh_act = new_db.get(name_park_kwh)
+
+            name_surname = 'substitution'
+
+        elif substitution and lci_phase:
+            if lci_phase == 'installation':
+                continue
+            # turbine lci phases
+            name_turbine_phase = park_name + '_substitution_' + lci_phase
+            lci_phase_act = new_db.get(name_turbine_phase)
+
+            name_surname = 'substitution'
+
+        elif repowering and not lci_phase:
+            # turbine
+            name_turbine = park_name + '_repowering_single_turbine'
+            name_turbine_kwh = park_name + '_repowering_turbine_kwh'
+            turbine_act = new_db.get(name_turbine)
+            turbine_kwh_act = new_db.get(name_turbine_kwh)
+
+            # park
+            name_park = park_name + f'_repowering_{str(park_power)}'
+            name_park_kwh = park_name + '_repowering_park_kwh'
+            park_act = new_db.get(name_park)
+            park_kwh_act = new_db.get(name_park_kwh)
+
+            name_surname = 'repowering'
+
+        elif repowering and lci_phase:
+            # turbine lci phases
+            name_turbine_phase = park_name + '_repowering_' + lci_phase
+            lci_phase_act = new_db.get(name_turbine_phase)
+
+            name_surname = 'repowering'
+
+        name_activity = {0: 'turbine (FU unit)', 1: 'turbine (FU kWh)', 2: 'park (FU unit)', 3: 'park (FU kWh)'}
+        if not turbine_act:
+            print(str(lci_phase_act))
+            lca_obj = lci_phase_act.lca(amount=1)
+            results = {}
+            for m in methods:
+                lca_obj.switch_method(m)
+                lca_obj.lcia()
+                results[m[1]] = lca_obj.score
+            results_acts[f'{lci_phase}_{name_surname}'] = results
+        elif turbine_act:
+            acts = [turbine_act, turbine_kwh_act, park_act, park_kwh_act]
+            for i, act in enumerate(acts):
+                print(str(act))
+                lca_obj = act.lca(amount=1)
+                results = {}
+                for m in methods:
+                    lca_obj.switch_method(m)
+                    lca_obj.lcia()
+                    results[m[1]] = lca_obj.score
+                results_acts[name_activity[i]] = results
+        df = pd.DataFrame(results_acts)
+
+    return df
+
+
 def test(park_name: str, extension: bool, repowering: bool, substitution: bool,
          lci_phase: Optional[Literal['materials', 'manufacturing', 'transport', 'installation', 'maintenance', 'eol']],
          park_power: float = None):
@@ -1002,8 +1122,27 @@ def test(park_name: str, extension: bool, repowering: bool, substitution: bool,
     return turbine_ex, turbine_kwh_ex, park_ex, park_kwh_ex, lci_phase_ex
 
 
-def lci_excel_output(park_name, extension, repowering, substitution, lci_phase, park_power, file_path):
+def lci_excel_output(park_name, extension, repowering, substitution, park_power, file_path):
     with pd.ExcelWriter(file_path, engine='xlsxwriter') as writer:
+        if extension:
+            turbine_act_code = park_name + '_extension'
+        elif substitution:
+            turbine_act_code = park_name + '_substitution'
+        elif repowering:
+            turbine_act_code = park_name + '_repowering_single_turbine'
+        comment = new_db.get(turbine_act_code)._data['comment']
+        new_comment = re.sub(r'(\d+), (\d+)', r'\1; \2', comment)
+        splitted = new_comment.split(',')
+        input_variables = []
+        input_values = []
+        for a in splitted:
+            input_variables.append(a.split(':')[0])
+            input_values.append(a.split(':')[1][1:])
+        data_dict = {'input variables': input_variables,
+                     'input values': input_values}
+        df = pd.DataFrame(data_dict)
+        sheet_name = 'info'
+        df.to_excel(writer, sheet_name=sheet_name, index=False)
         for lci_phase in ['materials', 'manufacturing', 'transport', 'installation', 'maintenance', 'eol', False]:
             if extension and lci_phase:
                 if lci_phase == 'materials':
@@ -1082,7 +1221,12 @@ def lci_excel_output(park_name, extension, repowering, substitution, lci_phase, 
                     sheet_name = f'lci_{sheet_names[i]}'
                     df.to_excel(writer, sheet_name=sheet_name, index=False)
 
+        df_lcia = lca_wind_repowering(park_name=park_name, park_power=park_power, extension=extension,
+                                      repowering=repowering, substitution=substitution, method='EF v3.1')
+        df_lcia.to_excel(writer, sheet_name='lcia_results', index=True)
 
+#lci_excel_output(park_name='test_101_long', extension=True, repowering=False, substitution=False, lci_phase=None, park_power=0.0, file_path=r'C:\Users\1361185\OneDrive - UAB\PhD_ICTA_Miquel\lci_wind_modelling\repowering\test.xlsx')
+#lci_excel_output(park_name='test_106_long', extension=True, repowering=False, substitution=False, lci_phase=None, park_power=0.0, file_path=r'C:\Users\1361185\OneDrive - UAB\PhD_ICTA_Miquel\lci_wind_modelling\repowering\test.xlsx')
 pass
 
 # example of use lifetime extension long (no substitution or repowering):
