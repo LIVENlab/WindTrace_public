@@ -1220,6 +1220,82 @@ def lci_excel_output(park_name, extension, repowering, substitution, park_power,
                     df = pd.DataFrame(data_dict)
                     sheet_name = f'lci_{sheet_names[i]}'
                     df.to_excel(writer, sheet_name=sheet_name, index=False)
+            if substitution and lci_phase:
+                if lci_phase == 'materials':
+                    output = test(park_name=park_name, extension=False,
+                                  repowering=False, substitution=True, park_power=park_power, lci_phase=lci_phase)
+                    amount = []
+                    unit = []
+                    input_act = []
+                    act_names = ['Steel', 'Chromium steel', 'Iron', 'Aluminium', 'Copper', 'Epoxy resin', 'Rubber',
+                                 'PUR', 'PVC', 'Glass fiber', 'Electronics', 'Electrics', 'Lubricating oil',
+                                 'Reinforcing steel', 'Chromium steel', 'Concrete', 'Praseodymium', 'Neodymium',
+                                 'Dysprosium', 'Terbium', 'Boron', 'PE']
+                    for ex in output[4]:
+                        if ex._data['type'] != 'production':
+                            amount.append(ex.amount)
+                            unit.append(ex.unit)
+                            input_act.append(str(ex.input))
+
+                    data_dict = {
+                        'amount': amount,
+                        'unit': unit,
+                        'input': act_names,
+                        'input (bw2 activity)': input_act
+                    }
+                    df = pd.DataFrame(data_dict)
+                    sheet_name = f'lci_{lci_phase}_substitution'
+                    df.to_excel(writer, sheet_name=sheet_name, index=False)
+                elif lci_phase != 'installation':
+                    output = test(park_name=park_name, extension=False,
+                                  repowering=False, substitution=True, park_power=park_power, lci_phase=lci_phase)
+                    amount = []
+                    unit = []
+                    input_act = []
+                    for ex in output[4]:
+                        if ex._data['type'] != 'production':
+                            amount.append(ex.amount)
+                            unit.append(ex.unit)
+                            input_act.append(str(ex.input))
+
+                    data_dict = {
+                        'amount': amount,
+                        'unit': unit,
+                        'input (bw2 activity)': input_act
+                    }
+                    df = pd.DataFrame(data_dict)
+                    sheet_name = f'lci_{lci_phase}_substitution'
+                    df.to_excel(writer, sheet_name=sheet_name, index=False)
+            elif substitution and not lci_phase:
+                sheet_names = {0: 'turbine substitution (FU unit)', 1: 'turbine substitution (FU kWh)',
+                               2: 'park substitution (FU unit)', 3: 'park substitution (FU kWh)'}
+                output = test(park_name=park_name, extension=False,
+                              repowering=False, substitution=True, park_power=park_power, lci_phase=None)
+
+                for i, out in enumerate(output[:4]):
+                    amount = []
+                    unit = []
+                    input_act = []
+                    input_name = []
+                    for ex in out:
+                        if ex._data['type'] != 'production':
+                            amount.append(ex.amount)
+                            unit.append(ex.unit)
+                            input_act.append(str(ex.input))
+
+                            start_position = str(ex.input).find(park_name) + len(park_name) + 1
+                            name = str(ex.input)[start_position:].split("'")[0]
+                            input_name.append(name)
+
+                    data_dict = {
+                        'amount': amount,
+                        'unit': unit,
+                        'input': input_name,
+                        'input (bw2 activity)': input_act
+                    }
+                    df = pd.DataFrame(data_dict)
+                    sheet_name = f'lci_{sheet_names[i]}'
+                    df.to_excel(writer, sheet_name=sheet_name, index=False)
 
         df_lcia = lca_wind_repowering(park_name=park_name, park_power=park_power, extension=extension,
                                       repowering=repowering, substitution=substitution, method='EF v3.1')
