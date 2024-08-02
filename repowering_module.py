@@ -38,7 +38,7 @@ def lci_repowering(extension_long: bool, extension_short: bool, substitution: bo
                    cf_extension: float = None, time_adjusted_cf_extension: float = 0.009,
                    lifetime_substitution: int = None, number_of_turbines_substitution: int = None,
                    cf_substitution: float = None, time_adjusted_cf_substitution: float = 0.009,
-                   recycled_share_steel_extension_or_repowering: float = None,
+                   recycled_share_steel_extension: float = None,
                    park_power_repowering: float = None,
                    number_of_turbines_repowering: int = None,
                    manufacturer_repowering: str = None,
@@ -48,6 +48,7 @@ def lci_repowering(extension_long: bool, extension_short: bool, substitution: bo
                    generator_type_repowering: Optional[Literal['dd_eesg', 'dd_pmsg', 'gb_pmsg', 'gb_dfig']] = 'gb_dfig',
                    electricity_mix_steel_repowering: Optional[Literal['Norway', 'Europe', 'Poland']] = None,
                    lifetime_repowering: int = 25,
+                   recycled_share_steel_repowering: float = None,
                    cf_repowering: float = 0.24,
                    attrition_rate_repowering: float = 0.009,
                    land_use_permanent_intensity_repowering: int = 3000,
@@ -137,7 +138,7 @@ def lci_repowering(extension_long: bool, extension_short: bool, substitution: bo
                f'cf_extension: {cf_extension}, time_adjusted_cf_extension: {time_adjusted_cf_extension},'
                f'lifetime_substitution: {lifetime_substitution}, number_of_turbines_substitution: {number_of_turbines_substitution},'
                f'cf_substitution: {cf_substitution}, time_adjusted_cf_substitution: {time_adjusted_cf_substitution},'
-               f'recycled_share_steel_extension_or_repowering: {recycled_share_steel_extension_or_repowering},'
+               f'recycled_share_steel_extension: {recycled_share_steel_extension},'
                f'park_power_repowering: {park_power_repowering},'
                f'number_of_turbines_repowering: {number_of_turbines_repowering},'
                f'manufacturer_repowering: {manufacturer_repowering},'
@@ -147,6 +148,7 @@ def lci_repowering(extension_long: bool, extension_short: bool, substitution: bo
                f'generator_type_repowering: {generator_type_repowering},'
                f'electricity_mix_steel_repowering: {electricity_mix_steel_repowering},'
                f'lifetime_repowering: {lifetime_repowering},'
+               f'recycled_share_steel_repowering: {recycled_share_steel_repowering}'
                f'cf_repowering: {cf_repowering},'
                f'attrition_rate_repowering: {attrition_rate_repowering},'
                f'land_use_permanent_intensity_repowering: {land_use_permanent_intensity_repowering},'
@@ -182,7 +184,7 @@ def lci_repowering(extension_long: bool, extension_short: bool, substitution: bo
                                      foundations=consts.LONG_EXTENSION['foundations'],
                                      electronics_and_electrics=consts.LONG_EXTENSION['electronics_and_electrics'],
                                      lci_materials_i=lci_materials, lifetime_extension=lifetime_extension,
-                                     recycled_share_extension=recycled_share_steel_extension_or_repowering,
+                                     recycled_share_extension=recycled_share_steel_extension,
                                      substitution=substitution, year_of_extension=year_of_extension, comment=comment)
         park_extended_act = extension_wind_park(park_location=park_location_i, park_name=park_name_i,
                                                 extension_turbine_act=turbine_act,
@@ -206,7 +208,7 @@ def lci_repowering(extension_long: bool, extension_short: bool, substitution: bo
                                      foundations=consts.SHORT_EXTENSION['foundations'],
                                      electronics_and_electrics=consts.SHORT_EXTENSION['electronics_and_electrics'],
                                      lci_materials_i=lci_materials, lifetime_extension=lifetime_extension,
-                                     recycled_share_extension=recycled_share_steel_extension_or_repowering,
+                                     recycled_share_extension=recycled_share_steel_extension,
                                      substitution=substitution, year_of_extension=year_of_extension, comment=comment)
         park_extended_act = extension_wind_park(park_location=park_location_i, park_name=park_name_i,
                                                 extension_turbine_act=turbine_act,
@@ -232,7 +234,7 @@ def lci_repowering(extension_long: bool, extension_short: bool, substitution: bo
                                      foundations=consts.LONG_EXTENSION['foundations'],
                                      electronics_and_electrics=consts.LONG_EXTENSION['electronics_and_electrics'],
                                      lci_materials_i=lci_materials, lifetime_extension=lifetime_extension,
-                                     recycled_share_extension=recycled_share_steel_extension_or_repowering,
+                                     recycled_share_extension=recycled_share_steel_extension,
                                      substitution=substitution, year_of_extension=year_of_extension, comment=comment)
         park_extended_act = extension_wind_park(park_location=park_location_i, park_name=park_name_i,
                                                 extension_turbine_act=turbine_act,
@@ -258,7 +260,7 @@ def lci_repowering(extension_long: bool, extension_short: bool, substitution: bo
                                      foundations=consts.SHORT_EXTENSION['foundations'],
                                      electronics_and_electrics=consts.SHORT_EXTENSION['electronics_and_electrics'],
                                      lci_materials_i=lci_materials, lifetime_extension=lifetime_extension,
-                                     recycled_share_extension=recycled_share_steel_extension_or_repowering,
+                                     recycled_share_extension=recycled_share_steel_extension,
                                      substitution=substitution, year_of_extension=year_of_extension, comment=comment)
         park_extended_act = extension_wind_park(park_location=park_location_i, park_name=park_name_i,
                                                 extension_turbine_act=turbine_act,
@@ -284,7 +286,7 @@ def lci_repowering(extension_long: bool, extension_short: bool, substitution: bo
                                      foundations=consts.REPLACEMENT_BASELINE['foundations'],
                                      electronics_and_electrics=consts.REPLACEMENT_BASELINE['electronics_and_electrics'],
                                      lci_materials_i=lci_materials, lifetime_extension=lifetime_substitution,
-                                     recycled_share_extension=recycled_share_steel_extension_or_repowering,
+                                     recycled_share_extension=recycled_share_steel_extension,
                                      substitution=substitution, year_of_extension=year_of_extension, comment=comment)
         park_extended_act = extension_wind_park(park_location=park_location_i, park_name=park_name_i,
                                                 extension_turbine_act=turbine_act,
@@ -312,7 +314,7 @@ def lci_repowering(extension_long: bool, extension_short: bool, substitution: bo
                                      foundations=consts.REPLACEMENT_BASELINE['foundations'],
                                      electronics_and_electrics=consts.REPLACEMENT_BASELINE['electronics_and_electrics'],
                                      lci_materials_i=lci_materials, lifetime_extension=lifetime_extension,
-                                     recycled_share_extension=recycled_share_steel_extension_or_repowering,
+                                     recycled_share_extension=recycled_share_steel_extension,
                                      substitution=substitution, year_of_extension=year_of_extension, comment=comment)
         park_extended_act = extension_wind_park(park_location=park_location_i, park_name=park_name_i,
                                                 extension_turbine_act=turbine_act,
@@ -334,7 +336,7 @@ def lci_repowering(extension_long: bool, extension_short: bool, substitution: bo
                                            turbine_power=turbine_power_repowering, hub_height=hub_height_repowering,
                                            commissioning_year=year_of_repowering,
                                            generator_type=generator_type_repowering,
-                                           recycled_share_steel=recycled_share_steel_extension_or_repowering,
+                                           recycled_share_steel=recycled_share_steel_repowering,
                                            electricity_mix_steel=electricity_mix_steel_repowering,
                                            lifetime=lifetime_repowering,
                                            land_use_permanent_intensity=land_use_permanent_intensity_repowering,
