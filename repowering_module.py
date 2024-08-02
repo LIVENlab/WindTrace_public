@@ -246,6 +246,8 @@ def lci_repowering(extension_long: bool, extension_short: bool, substitution: bo
                                           park_extended_act=park_extended_act, turbine_extended_act=turbine_act)
         substitution = True
 
+    # TODO: ara mateix quan faig extension + substitution, durant la substitution m'agafa el recycled steel share de
+    #  l'extension. Hauria d'afegir una variable que permetés afegir recycled steel share de la substitució
     elif extension_short and substitution:
         substitution = False
         turbine_act = life_extension(park_name=park_name_i, park_location=park_location_i,
@@ -1124,7 +1126,7 @@ def test(park_name: str, extension: bool, repowering: bool, substitution: bool,
     return turbine_ex, turbine_kwh_ex, park_ex, park_kwh_ex, lci_phase_ex
 
 
-def lci_excel_output(park_name, extension, repowering, substitution, park_power, file_path):
+def lci_excel_output(park_name, extension, repowering, substitution, park_power_repowering, file_path):
     with pd.ExcelWriter(file_path, engine='xlsxwriter') as writer:
         if extension:
             turbine_act_code = park_name + '_extension'
@@ -1133,7 +1135,7 @@ def lci_excel_output(park_name, extension, repowering, substitution, park_power,
         elif repowering:
             turbine_act_code = park_name + '_repowering_single_turbine'
         comment = new_db.get(turbine_act_code)._data['comment']
-        new_comment = re.sub(r'(\d+), (\d+)', r'\1; \2', comment)
+        new_comment = re.sub(r'(\d+), (\d+|-\d+)', r'\1; \2', comment)
         splitted = new_comment.split(',')
         input_variables = []
         input_values = []
@@ -1149,7 +1151,8 @@ def lci_excel_output(park_name, extension, repowering, substitution, park_power,
             if extension and lci_phase:
                 if lci_phase == 'materials':
                     output = test(park_name=park_name, extension=extension,
-                                  repowering=False, substitution=False, park_power=10.0, lci_phase=lci_phase)
+                                  repowering=False, substitution=False, park_power=park_power_repowering,
+                                  lci_phase=lci_phase)
                     amount = []
                     unit = []
                     input_act = []
@@ -1174,7 +1177,8 @@ def lci_excel_output(park_name, extension, repowering, substitution, park_power,
                     df.to_excel(writer, sheet_name=sheet_name, index=False)
                 elif lci_phase != 'installation':
                     output = test(park_name=park_name, extension=extension,
-                                  repowering=False, substitution=False, park_power=10.0, lci_phase=lci_phase)
+                                  repowering=False, substitution=False, park_power=park_power_repowering,
+                                  lci_phase=lci_phase)
                     amount = []
                     unit = []
                     input_act = []
@@ -1196,7 +1200,8 @@ def lci_excel_output(park_name, extension, repowering, substitution, park_power,
                 sheet_names = {0: 'turbine extension (FU unit)', 1: 'turbine extension (FU kWh)',
                                2: 'park extension (FU unit)', 3: 'park extension (FU kWh)'}
                 output = test(park_name=park_name, extension=extension,
-                              repowering=False, substitution=False, park_power=10.0, lci_phase=None)
+                              repowering=False, substitution=False, park_power=park_power_repowering,
+                              lci_phase=None)
 
                 for i, out in enumerate(output[:4]):
                     amount = []
@@ -1225,7 +1230,8 @@ def lci_excel_output(park_name, extension, repowering, substitution, park_power,
             if substitution and lci_phase:
                 if lci_phase == 'materials':
                     output = test(park_name=park_name, extension=False,
-                                  repowering=False, substitution=True, park_power=park_power, lci_phase=lci_phase)
+                                  repowering=False, substitution=True, park_power=park_power_repowering,
+                                  lci_phase=lci_phase)
                     amount = []
                     unit = []
                     input_act = []
@@ -1250,7 +1256,8 @@ def lci_excel_output(park_name, extension, repowering, substitution, park_power,
                     df.to_excel(writer, sheet_name=sheet_name, index=False)
                 elif lci_phase != 'installation':
                     output = test(park_name=park_name, extension=False,
-                                  repowering=False, substitution=True, park_power=park_power, lci_phase=lci_phase)
+                                  repowering=False, substitution=True, park_power=park_power_repowering,
+                                  lci_phase=lci_phase)
                     amount = []
                     unit = []
                     input_act = []
@@ -1272,7 +1279,8 @@ def lci_excel_output(park_name, extension, repowering, substitution, park_power,
                 sheet_names = {0: 'turbine substitution (FU unit)', 1: 'turbine substitution (FU kWh)',
                                2: 'park substitution (FU unit)', 3: 'park substitution (FU kWh)'}
                 output = test(park_name=park_name, extension=False,
-                              repowering=False, substitution=True, park_power=park_power, lci_phase=None)
+                              repowering=False, substitution=True, park_power=park_power_repowering,
+                              lci_phase=None)
 
                 for i, out in enumerate(output[:4]):
                     amount = []
@@ -1299,12 +1307,10 @@ def lci_excel_output(park_name, extension, repowering, substitution, park_power,
                     sheet_name = f'lci_{sheet_names[i]}'
                     df.to_excel(writer, sheet_name=sheet_name, index=False)
 
-        df_lcia = lca_wind_repowering(park_name=park_name, park_power=park_power, extension=extension,
+        df_lcia = lca_wind_repowering(park_name=park_name, park_power=park_power_repowering, extension=extension,
                                       repowering=repowering, substitution=substitution, method='EF v3.1')
         df_lcia.to_excel(writer, sheet_name='lcia_results', index=True)
 
-#lci_excel_output(park_name='test_101_long', extension=True, repowering=False, substitution=False, lci_phase=None, park_power=0.0, file_path=r'C:\Users\1361185\OneDrive - UAB\PhD_ICTA_Miquel\lci_wind_modelling\repowering\test.xlsx')
-#lci_excel_output(park_name='test_106_long', extension=True, repowering=False, substitution=False, lci_phase=None, park_power=0.0, file_path=r'C:\Users\1361185\OneDrive - UAB\PhD_ICTA_Miquel\lci_wind_modelling\repowering\test.xlsx')
 pass
 
 # example of use lifetime extension long (no substitution or repowering):
