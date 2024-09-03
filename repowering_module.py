@@ -1,3 +1,4 @@
+import os
 import re
 import sys
 import numpy as np
@@ -8,19 +9,6 @@ from typing import Optional, Literal, Tuple
 import bw2data as bd
 import bw2io as bi
 import consts
-
-bd.projects.set_current("lci_model")
-bi.bw2setup()
-spold_files = r"C:\ecoinvent_data\3.9.1\cutoff\datasets"
-if "cutoff391" not in bd.databases:
-    ei = bi.SingleOutputEcospold2Importer(spold_files, "cutoff391", use_mp=False)
-    ei.apply_strategies()
-    ei.write_database()
-cutoff391 = bd.Database("cutoff391")
-if 'new_db' not in bd.databases:
-    new_db = bd.Database('new_db')
-    new_db.register()
-new_db = bd.Database('new_db')
 
 
 def lci_repowering(extension_long: bool, extension_short: bool, substitution: bool, repowering: bool,
@@ -35,7 +23,7 @@ def lci_repowering(extension_long: bool, extension_short: bool, substitution: bo
                    electricity_mix_steel_i: Optional[Literal['Norway', 'Europe', 'Poland']] = None,
                    generator_type_i: Literal['dd_eesg', 'dd_pmsg', 'gb_pmsg', 'gb_dfig'] = 'gb_dfig',
                    lifetime_extension: int = None, number_of_turbines_extension: int = None,
-                   cf_extension: float = None, time_adjusted_cf_extension: float = 0.009,
+                   cf_extension: float = None, attrition_rate_extension: float = 0.009,
                    lifetime_substitution: int = None, number_of_turbines_substitution: int = None,
                    cf_substitution: float = None, time_adjusted_cf_substitution: float = 0.009,
                    recycled_share_steel_extension: float = None,
@@ -135,7 +123,7 @@ def lci_repowering(extension_long: bool, extension_short: bool, substitution: bo
                f'electricity_mix_steel_i: {electricity_mix_steel_i},'
                f'generator_type_i: {generator_type_i},'
                f'lifetime_extension: {lifetime_extension}, number_of_turbines_extension: {number_of_turbines_extension},'
-               f'cf_extension: {cf_extension}, time_adjusted_cf_extension: {time_adjusted_cf_extension},'
+               f'cf_extension: {cf_extension}, attrition_rate_extension: {attrition_rate_extension},'
                f'lifetime_substitution: {lifetime_substitution}, number_of_turbines_substitution: {number_of_turbines_substitution},'
                f'cf_substitution: {cf_substitution}, time_adjusted_cf_substitution: {time_adjusted_cf_substitution},'
                f'recycled_share_steel_extension: {recycled_share_steel_extension},'
@@ -191,7 +179,7 @@ def lci_repowering(extension_long: bool, extension_short: bool, substitution: bo
                                                 number_of_turbines_extended=number_of_turbines_extension)
         electricity_production_activities(park_name=park_name_i, park_location=park_location_i, park_power=park_power_i,
                                           turbine_power=turbine_power_i,
-                                          time_adjusted_cf_extended=time_adjusted_cf_extension,
+                                          time_adjusted_cf_extended=attrition_rate_extension,
                                           lifetime_extended=lifetime_extension, cf_extended=cf_extension,
                                           park_extended_act=park_extended_act, turbine_extended_act=turbine_act)
 
@@ -215,7 +203,7 @@ def lci_repowering(extension_long: bool, extension_short: bool, substitution: bo
                                                 number_of_turbines_extended=number_of_turbines_extension)
         electricity_production_activities(park_name=park_name_i, park_location=park_location_i, park_power=park_power_i,
                                           turbine_power=turbine_power_i,
-                                          time_adjusted_cf_extended=time_adjusted_cf_extension,
+                                          time_adjusted_cf_extended=attrition_rate_extension,
                                           lifetime_extended=lifetime_extension, cf_extended=cf_extension,
                                           park_extended_act=park_extended_act, turbine_extended_act=turbine_act)
 
@@ -241,7 +229,7 @@ def lci_repowering(extension_long: bool, extension_short: bool, substitution: bo
                                                 number_of_turbines_extended=number_of_turbines_extension)
         electricity_production_activities(park_name=park_name_i, park_location=park_location_i, park_power=park_power_i,
                                           turbine_power=turbine_power_i,
-                                          time_adjusted_cf_extended=time_adjusted_cf_extension,
+                                          time_adjusted_cf_extended=attrition_rate_extension,
                                           lifetime_extended=lifetime_extension, cf_extended=cf_extension,
                                           park_extended_act=park_extended_act, turbine_extended_act=turbine_act)
         substitution = True
@@ -269,7 +257,7 @@ def lci_repowering(extension_long: bool, extension_short: bool, substitution: bo
                                                 number_of_turbines_extended=number_of_turbines_extension)
         electricity_production_activities(park_name=park_name_i, park_location=park_location_i, park_power=park_power_i,
                                           turbine_power=turbine_power_i,
-                                          time_adjusted_cf_extended=time_adjusted_cf_extension,
+                                          time_adjusted_cf_extended=attrition_rate_extension,
                                           lifetime_extended=lifetime_extension, cf_extended=cf_extension,
                                           park_extended_act=park_extended_act, turbine_extended_act=turbine_act)
         substitution = True
@@ -324,7 +312,7 @@ def lci_repowering(extension_long: bool, extension_short: bool, substitution: bo
                                                 substitution=substitution)
         electricity_production_activities(park_name=park_name_i, park_location=park_location_i, park_power=park_power_i,
                                           turbine_power=turbine_power_i,
-                                          time_adjusted_cf_extended=time_adjusted_cf_extension,
+                                          time_adjusted_cf_extended=attrition_rate_extension,
                                           lifetime_extended=lifetime_extension, cf_extended=cf_extension,
                                           park_extended_act=park_extended_act, turbine_extended_act=turbine_act,
                                           substitution=substitution)
@@ -1126,7 +1114,10 @@ def test(park_name: str, extension: bool, repowering: bool, substitution: bool,
     return turbine_ex, turbine_kwh_ex, park_ex, park_kwh_ex, lci_phase_ex
 
 
-def lci_excel_output(park_name, extension, repowering, substitution, park_power_repowering, file_path):
+def lci_excel_output(park_name, extension, repowering, substitution, park_power_repowering, scenario_name, method_name):
+    cwd = os.getcwd()
+    file_name = f'results_{park_name}_{scenario_name}.xlsx'
+    file_path = os.path.join(cwd, file_name)
     with pd.ExcelWriter(file_path, engine='xlsxwriter') as writer:
         if extension:
             turbine_act_code = park_name + '_extension'
@@ -1308,10 +1299,25 @@ def lci_excel_output(park_name, extension, repowering, substitution, park_power_
                     df.to_excel(writer, sheet_name=sheet_name, index=False)
 
         df_lcia = lca_wind_repowering(park_name=park_name, park_power=park_power_repowering, extension=extension,
-                                      repowering=repowering, substitution=substitution, method='EF v3.1')
+                                      repowering=repowering, substitution=substitution, method=method_name)
         df_lcia.to_excel(writer, sheet_name='lcia_results', index=True)
 
-pass
+
+if __name__ == "__main__":
+    bd.projects.set_current(consts.PROJECT_NAME)
+    bi.bw2setup()
+    spold_files = consts.SPOLD_FILES
+    if "cutoff391" not in bd.databases:
+        ei = bi.SingleOutputEcospold2Importer(spold_files, "cutoff391", use_mp=False)
+        ei.apply_strategies()
+        ei.write_database()
+    cutoff391 = bd.Database("cutoff391")
+    if 'new_db' not in bd.databases:
+        new_db = bd.Database('new_db')
+        new_db.register()
+    new_db = bd.Database('new_db')
+    pass
+
 
 # example of use lifetime extension long (no substitution or repowering):
 lci_repowering(extension_long=True, extension_short=False, substitution=False, repowering=False,
@@ -1326,7 +1332,7 @@ lci_repowering(extension_long=True, extension_short=False, substitution=False, r
                electricity_mix_steel_i=None,
                generator_type_i='gb_dfig',
                lifetime_extension=10, number_of_turbines_extension=5,
-               cf_extension=0.30, time_adjusted_cf_extension=0.009)
+               cf_extension=0.30, attrition_rate_extension=0.009)
 
 # example of use lifetime extension short (no substitution or repowering):
 lci_repowering(extension_long=False, extension_short=True, substitution=False, repowering=False,
@@ -1341,7 +1347,7 @@ lci_repowering(extension_long=False, extension_short=True, substitution=False, r
                electricity_mix_steel_i=None,
                generator_type_i='gb_dfig',
                lifetime_extension=5, number_of_turbines_extension=5,
-               cf_extension=0.30, time_adjusted_cf_extension=0.009)
+               cf_extension=0.30, attrition_rate_extension=0.009)
 
 # example of use substitution (no lifetime extension):
 lci_repowering(extension_long=False, extension_short=False, substitution=True, repowering=False,
@@ -1395,7 +1401,7 @@ lci_repowering(extension_long=True, extension_short=False, substitution=True, re
                electricity_mix_steel_i=None,
                generator_type_i='gb_dfig',
                lifetime_extension=5, number_of_turbines_extension=5,
-               cf_extension=0.30, time_adjusted_cf_extension=0.009,
+               cf_extension=0.30, attrition_rate_extension=0.009,
                lifetime_substitution=20, number_of_turbines_substitution=5,
                cf_substitution=0.35, time_adjusted_cf_substitution=0.009)
 
@@ -1412,7 +1418,7 @@ lci_repowering(extension_long=True, extension_short=False, substitution=False, r
                electricity_mix_steel_i=None,
                generator_type_i='gb_dfig',
                lifetime_extension=5, number_of_turbines_extension=5,
-               cf_extension=0.30, time_adjusted_cf_extension=0.009,
+               cf_extension=0.30, attrition_rate_extension=0.009,
                park_power_repowering=15.0,
                number_of_turbines_repowering=3,
                manufacturer_repowering='Siemens Gamesa',

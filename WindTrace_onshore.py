@@ -11,13 +11,10 @@ from statistics import linear_regression
 import sys
 import consts
 
-# Vestas file. INSERT HERE THE ROUTE OF THE clean_data.xlsx file.
-VESTAS_FILE = r'C:\Users\1361185\PycharmProjects\lci_wind_model\clean_data.xlsx'
-
 # create a bw25 project, import ecoinvent v.3.9.1 and create an empty database 'new_db'
-bd.projects.set_current("lci_model")
+bd.projects.set_current(consts.PROJECT_NAME)
 bi.bw2setup()
-spold_files = r"C:\ecoinvent_data\3.9.1\cutoff\datasets"
+spold_files = consts.SPOLD_FILES
 if "cutoff391" not in bd.databases:
     ei = bi.SingleOutputEcospold2Importer(spold_files, "cutoff391", use_mp=False)
     ei.apply_strategies()
@@ -37,12 +34,7 @@ def steel_turbine(plot_mat: bool = False):
     to the lci) is stored as 'std_dev' also in the same dictionary and corresponds to the standard deviation of the
     residuals. If plot_mat is set to True, all the materials fitting plots will be shown.
     """
-    try:
-        vestas_data = pd.read_excel(VESTAS_FILE, sheet_name="1_MATERIALS_TURBINE", dtype=None, decimal=";", header=0)
-    except FileNotFoundError:
-        print('WARNING: remember to change the route of the variable VESTAS_FILE to the location of clean_data.xlsx '
-              'in your computer')
-        sys.exit()
+    vestas_data = pd.read_excel(consts.VESTAS_FILE, sheet_name="1_MATERIALS_TURBINE", dtype=None, decimal=";", header=0)
 
     short_vestas_data = vestas_data[vestas_data['Hub height'] <= 84]
     # Extracting columns
@@ -174,17 +166,12 @@ def rare_earth(generator_type: Literal['dd_eesg', 'dd_pmsg', 'gb_pmsg', 'gb_dfig
     Material intensity data according to Ferrara et al. (2020). Units: t/GW
     generator_type: accepted arguments 'dd_eesg', 'dd_pmsg', 'gb_pmsg', 'gb_dfig'.
     """
-    rare_earth_dict = {'Praseodymium': {'dd_eesg': 9, 'dd_pmsg': 35, 'gb_pmsg': 4, 'gb_dfig': 0},
-                       'Neodymium': {'dd_eesg': 28, 'dd_pmsg': 180, 'gb_pmsg': 51, 'gb_dfig': 12},
-                       'Dysprosium': {'dd_eesg': 6, 'dd_pmsg': 17, 'gb_pmsg': 6, 'gb_dfig': 2},
-                       'Terbium': {'dd_eesg': 1, 'dd_pmsg': 7, 'gb_pmsg': 1, 'gb_dfig': 0},
-                       'Boron': {'dd_eesg': 0, 'dd_pmsg': 6, 'gb_pmsg': 1, 'gb_dfig': 0}
-                       }
-    rare_earth_int = {'Praseodymium': rare_earth_dict['Praseodymium'][generator_type],
-                      'Neodymium': rare_earth_dict['Neodymium'][generator_type],
-                      'Dysprosium': rare_earth_dict['Dysprosium'][generator_type],
-                      'Terbium': rare_earth_dict['Terbium'][generator_type],
-                      'Boron': rare_earth_dict['Boron'][generator_type]}
+
+    rare_earth_int = {'Praseodymium': consts.RARE_EARTH_DICT['Praseodymium'][generator_type],
+                      'Neodymium': consts.RARE_EARTH_DICT['Neodymium'][generator_type],
+                      'Dysprosium': consts.RARE_EARTH_DICT['Dysprosium'][generator_type],
+                      'Terbium': consts.RARE_EARTH_DICT['Terbium'][generator_type],
+                      'Boron': consts.RARE_EARTH_DICT['Boron'][generator_type]}
     return rare_earth_int
 
 
@@ -265,7 +252,7 @@ def materials_mass(generator_type: Literal['dd_eesg', 'dd_pmsg', 'gb_pmsg', 'gb_
     generator_type: it only accepts the models (strings) 'dd_eesg', 'dd_pmsg', 'gb_pmsg', 'gb_dfig'.
     """
     mass_materials = {}
-    materials_polyfits, mat_polyfits_short, intersection = foundations_mat(VESTAS_FILE)
+    materials_polyfits, mat_polyfits_short, intersection = foundations_mat(consts.VESTAS_FILE)
 
     uncertainty = {}
 
