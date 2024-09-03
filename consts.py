@@ -1,3 +1,5 @@
+import os
+
 # When possible, RER or Europe without Switzerland locations have been selected
 MATERIALS_EI391_ACTIVITY_CODES = {
     'Low alloy steel': {'name': 'market for steel, low-alloyed', 'code': 'a81ce0e882f1b0ef617462fc8e7472e4'},
@@ -224,3 +226,17 @@ SHORT_EXTENSION = {'steel': 0.01, 'c_steel': 0.01, 'iron': 0.34, 'aluminium': 0,
                    'plastics': 0.91, 'others': 0, 'foundations': 0, 'electronics_and_electrics': 0}
 REPLACEMENT_BASELINE = {'steel': 0.84, 'c_steel': 0.84, 'iron': 1, 'aluminium': 0.65, 'copper': 0.81,
                         'plastics': 1, 'others': 1, 'foundations': 0, 'electronics_and_electrics': 0}
+
+RARE_EARTH_DICT = {'Praseodymium': {'dd_eesg': 9, 'dd_pmsg': 35, 'gb_pmsg': 4, 'gb_dfig': 0},
+                   'Neodymium': {'dd_eesg': 28, 'dd_pmsg': 180, 'gb_pmsg': 51, 'gb_dfig': 12},
+                   'Dysprosium': {'dd_eesg': 6, 'dd_pmsg': 17, 'gb_pmsg': 6, 'gb_dfig': 2},
+                   'Terbium': {'dd_eesg': 1, 'dd_pmsg': 7, 'gb_pmsg': 1, 'gb_dfig': 0},
+                   'Boron': {'dd_eesg': 0, 'dd_pmsg': 6, 'gb_pmsg': 1, 'gb_dfig': 0}
+                   }
+
+PROJECT_NAME = 'repowering'
+SPOLD_FILES = r"C:\ecoinvent_data\3.9.1\cutoff\datasets"
+
+cwd = os.getcwd()
+VESTAS_FILE = os.path.join(cwd, 'clean_data.xlsx')
+
