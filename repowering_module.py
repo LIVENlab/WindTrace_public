@@ -25,7 +25,7 @@ def lci_repowering(extension_long: bool, extension_short: bool, substitution: bo
                    lifetime_extension: int = None, number_of_turbines_extension: int = None,
                    cf_extension: float = None, attrition_rate_extension: float = 0.009,
                    lifetime_substitution: int = None, number_of_turbines_substitution: int = None,
-                   cf_substitution: float = None, time_adjusted_cf_substitution: float = 0.009,
+                   cf_substitution: float = None, attrition_rate_substitution: float = 0.009,
                    recycled_share_steel_extension: float = None,
                    park_power_repowering: float = None,
                    number_of_turbines_repowering: int = None,
@@ -125,7 +125,7 @@ def lci_repowering(extension_long: bool, extension_short: bool, substitution: bo
                f'lifetime_extension: {lifetime_extension}, number_of_turbines_extension: {number_of_turbines_extension},'
                f'cf_extension: {cf_extension}, attrition_rate_extension: {attrition_rate_extension},'
                f'lifetime_substitution: {lifetime_substitution}, number_of_turbines_substitution: {number_of_turbines_substitution},'
-               f'cf_substitution: {cf_substitution}, time_adjusted_cf_substitution: {time_adjusted_cf_substitution},'
+               f'cf_substitution: {cf_substitution}, attrition_rate_substitution: {attrition_rate_substitution},'
                f'recycled_share_steel_extension: {recycled_share_steel_extension},'
                f'park_power_repowering: {park_power_repowering},'
                f'number_of_turbines_repowering: {number_of_turbines_repowering},'
@@ -286,7 +286,7 @@ def lci_repowering(extension_long: bool, extension_short: bool, substitution: bo
                                                 substitution=substitution)
         electricity_production_activities(park_name=park_name_i, park_location=park_location_i, park_power=park_power_i,
                                           turbine_power=turbine_power_i,
-                                          time_adjusted_cf_extended=time_adjusted_cf_substitution,
+                                          time_adjusted_cf_extended=attrition_rate_substitution,
                                           lifetime_extended=lifetime_substitution, cf_extended=cf_substitution,
                                           park_extended_act=park_extended_act, turbine_extended_act=turbine_act,
                                           substitution=substitution)
@@ -1392,7 +1392,7 @@ lci_repowering(extension_long=False, extension_short=False, substitution=True, r
                electricity_mix_steel_i=None,
                generator_type_i='gb_dfig',
                lifetime_substitution=20, number_of_turbines_substitution=5,
-               cf_substitution=0.30, time_adjusted_cf_substitution=0.009)
+               cf_substitution=0.30, attrition_rate_substitution=0.009)
 
 # example of use repowering (no lifetime extension):
 lci_repowering(extension_long=False, extension_short=False, substitution=False, repowering=True,
@@ -1433,7 +1433,7 @@ lci_repowering(extension_long=True, extension_short=False, substitution=True, re
                lifetime_extension=5, number_of_turbines_extension=5,
                cf_extension=0.30, attrition_rate_extension=0.009,
                lifetime_substitution=20, number_of_turbines_substitution=5,
-               cf_substitution=0.35, time_adjusted_cf_substitution=0.009)
+               cf_substitution=0.35, attrition_rate_substitution=0.009)
 
 # example of use long lifetime extension AND repowering:
 lci_repowering(extension_long=True, extension_short=False, substitution=False, repowering=True,
