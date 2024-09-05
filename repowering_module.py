@@ -434,13 +434,12 @@ def life_extension(park_name: str, park_location: str,
             new_masses_extension[material] = lci_materials_i[material] * c_steel
         elif material == 'Fiberglass':
             inp = cutoff391.get(code=consts.MATERIALS_EI391_ACTIVITY_CODES[material]['code'])
-            # Mass includes 10% of waste produced in the manufacturing (Psomopoulos et al. 2019)
             ex = materials_activity.new_exchange(input=inp, type='technosphere',
-                                                 amount=lci_materials_i[material] * 1.1 * plastics)
+                                                 amount=lci_materials_i[material] * plastics)
             ex.save()
             materials_activity.save()
             provisional_print(material=material, initial_amount=lci_materials_i[material], classification='plastics',
-                              share=plastics, final_amount=lci_materials_i[material] * plastics * 1.1)
+                              share=plastics, final_amount=lci_materials_i[material] * plastics)
             new_masses_extension[material] = lci_materials_i[material] * plastics
         # foundations
         elif 'foundations' in material:
@@ -587,9 +586,9 @@ def life_extension(park_name: str, park_location: str,
 
     for material in new_masses_extension.keys():
         if 'Concrete' in material:
-            concrete_tkm = new_masses_extension[material] * 2.4 * 50
+            concrete_tkm = new_masses_extension[material] * 2.4 * 50 #50 km of road transport, 2.4 is the density
         elif material == 'Low alloy steel':
-            steel_tower_tkm = new_masses_extension[material] / 1000 * 450
+            steel_tower_tkm = new_masses_extension[material] / 1000 * 450 #450 km of road transport
         else:
             distance_dict = {}
             for location_id in consts.MANUFACTURER_LOC[manufacturer_i]:
