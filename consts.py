@@ -234,8 +234,8 @@ RARE_EARTH_DICT = {'Praseodymium': {'dd_eesg': 9, 'dd_pmsg': 35, 'gb_pmsg': 4, '
                    'Boron': {'dd_eesg': 0, 'dd_pmsg': 6, 'gb_pmsg': 1, 'gb_dfig': 0}
                    }
 
-PROJECT_NAME = 'repowering'
-SPOLD_FILES = r"C:\ecoinvent_data\3.9.1\cutoff\datasets"
+PROJECT_NAME = 'extension'
+SPOLD_FILES = r"C:\Users\1439891\OneDrive - UAB\Documentos\ecoinvent 3.9.1_cutoff_ecoSpold02\datasets"
 
 cwd = os.getcwd()
 VESTAS_FILE = os.path.join(cwd, 'clean_data.xlsx')
