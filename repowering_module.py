@@ -158,6 +158,8 @@ def lci_repowering(extension_long: bool, extension_short: bool, substitution: bo
                                                     recycled_share_steel=recycled_share_steel_i, lifetime=lifetime_i,
                                                     electricity_mix_steel=electricity_mix_steel_i,
                                                     generator_type=generator_type_i, include_life_cycle_stages=True)
+    for k, v in lci_materials.items():
+        lci_materials[k] = v/number_of_turbines_i
 
     if extension_long and not substitution:
         turbine_act = life_extension(park_name=park_name_i, park_location=park_location_i,
@@ -1316,6 +1318,35 @@ if __name__ == "__main__":
         new_db.register()
     new_db = bd.Database('new_db')
     pass
+
+# example Laura:
+    lci_repowering(extension_long=True, extension_short=False, substitution=False, repowering=True,
+                   park_name_i='park_example_4', park_power_i=21.6, number_of_turbines_i=12,
+                   park_location_i='PT',
+                   park_coordinates_i=(40.7927, -8.5085),
+                   manufacturer_i='Vestas',
+                   rotor_diameter_i=90,
+                   turbine_power_i=1.8, hub_height_i=100, commissioning_year_i=2008,
+                   recycled_share_steel_i=None,
+                   lifetime_i=25,
+                   electricity_mix_steel_i=None,
+                   generator_type_i='gb_dfig',
+                   lifetime_extension=25, number_of_turbines_extension=12,
+                   cf_extension=0.30, attrition_rate_extension=0.009,
+                   park_power_repowering=21.6,
+                   number_of_turbines_repowering=4,
+                   manufacturer_repowering='Siemens Gamesa',
+                   rotor_diameter_repowering=110,
+                   turbine_power_repowering=5.4,
+                   hub_height_repowering=120,
+                   generator_type_repowering='gb_dfig',
+                   electricity_mix_steel_repowering='Norway',
+                   lifetime_repowering=25,
+                   cf_repowering=0.42,
+                   attrition_rate_repowering=0.009
+                   )
+lci_excel_output(park_name='park_example_4', extension=True, repowering=False, substitution=False, park_power_repowering=21.6, scenario_name='extension', method_name='EF v3.1')
+lci_excel_output(park_name='park_example_4', extension=False, repowering=True, substitution=False, park_power_repowering=21.6, scenario_name='repowering', method_name='EF v3.1')
 
 
 # example of use lifetime extension long (no substitution or repowering):
