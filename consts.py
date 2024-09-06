@@ -219,6 +219,14 @@ secondary_steel = {'other': 0.4162, '2012': 0.4304, '2013': 0.4172, '2014': 0.40
 
 PRINTED_WARNING_STEEL = False
 
+# rare earth shares
+RARE_EARTH_DICT = {'Praseodymium': {'dd_eesg': 9, 'dd_pmsg': 35, 'gb_pmsg': 4, 'gb_dfig': 0},
+                   'Neodymium': {'dd_eesg': 28, 'dd_pmsg': 180, 'gb_pmsg': 51, 'gb_dfig': 12},
+                   'Dysprosium': {'dd_eesg': 6, 'dd_pmsg': 17, 'gb_pmsg': 6, 'gb_dfig': 2},
+                   'Terbium': {'dd_eesg': 1, 'dd_pmsg': 7, 'gb_pmsg': 1, 'gb_dfig': 0},
+                   'Boron': {'dd_eesg': 0, 'dd_pmsg': 6, 'gb_pmsg': 1, 'gb_dfig': 0}
+                   }
+
 # scenarios lifetime extension, replacement, repowering
 LONG_EXTENSION = {'steel': 0.08, 'c_steel': 0.08, 'iron': 1, 'aluminium': 0.65, 'copper': 0.81,
                   'plastics': 1, 'others': 1, 'foundations': 0, 'electronics_and_electrics': 0}
@@ -227,6 +235,7 @@ SHORT_EXTENSION = {'steel': 0.01, 'c_steel': 0.01, 'iron': 0.34, 'aluminium': 0,
 REPLACEMENT_BASELINE = {'steel': 0.84, 'c_steel': 0.84, 'iron': 1, 'aluminium': 0.65, 'copper': 0.81,
                         'plastics': 1, 'others': 1, 'foundations': 0, 'electronics_and_electrics': 0}
 
+#<<<<<<< HEAD
 RARE_EARTH_DICT = {'Praseodymium': {'dd_eesg': 9, 'dd_pmsg': 35, 'gb_pmsg': 4, 'gb_dfig': 0},
                    'Neodymium': {'dd_eesg': 28, 'dd_pmsg': 180, 'gb_pmsg': 51, 'gb_dfig': 12},
                    'Dysprosium': {'dd_eesg': 6, 'dd_pmsg': 17, 'gb_pmsg': 6, 'gb_dfig': 2},
@@ -234,9 +243,15 @@ RARE_EARTH_DICT = {'Praseodymium': {'dd_eesg': 9, 'dd_pmsg': 35, 'gb_pmsg': 4, '
                    'Boron': {'dd_eesg': 0, 'dd_pmsg': 6, 'gb_pmsg': 1, 'gb_dfig': 0}
                    }
 
+#=======
+# vestas_file path
+#>>>>>>> d3bb4856423663e49f2c83d749d0adde4be41a31
+cwd = os.getcwd()
+VESTAS_FILE = os.path.join(cwd, 'clean_data.xlsx')
+
+# variables to be set by the user
 PROJECT_NAME = 'extension'
 SPOLD_FILES = r"C:\Users\1439891\OneDrive - UAB\Documentos\ecoinvent 3.9.1_cutoff_ecoSpold02\datasets"
 
-cwd = os.getcwd()
-VESTAS_FILE = os.path.join(cwd, 'clean_data.xlsx')
+
 

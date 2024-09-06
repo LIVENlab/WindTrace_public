@@ -11,7 +11,7 @@ import bw2io as bi
 import consts
 
 
-def lci_repowering(extension_long: bool, extension_short: bool, substitution: bool, repowering: bool,
+def lci_repowering(scenario_name: str, extension_long: bool, extension_short: bool, substitution: bool, repowering: bool,
                    park_name_i: str, park_power_i: float, number_of_turbines_i: int,
                    park_location_i: str,
                    park_coordinates_i: tuple,
@@ -63,51 +63,31 @@ def lci_repowering(extension_long: bool, extension_short: bool, substitution: bo
         print('Substitution and repowering cannot happen at the same time. Choose one or the other.')
         sys.exit()
 
+    #we build a vector "stages" that includes all stages in the scenario
+    if extension_short:
+        stages = np.append(stages, "extension_short")
+    if extension_long:
+        stages =  np.append(stages, "extension_long")
+    if substitution:
+        stages = np.append(stages, "substitution")
+    if repowering:
+        stages = np.append(stages, "repowering")
+
     # calculate the year when the extension is happening
-    year_of_extension = commissioning_year_i + lifetime_i
-    year_of_repowering = commissioning_year_i + lifetime_i
+    year_first_stage = commissioning_year_i + lifetime_i
     if (extension_short or extension_long) and (repowering or substitution):
-        year_of_repowering = year_of_repowering + lifetime_extension
+        year_second_stage = year_first_stage + lifetime_extension
 
     # print the type of eol (e.g., short lifetime extension + repowering)
-    if extension_short and repowering:
-        print(f'You opted for a short lifetime extension ({lifetime_extension} years) and a repowering')
+    if len(stages) == 1:
+        print(f'You opted for a {stages[0]}')
         print(f'The initial turbine was commissioned in {commissioning_year_i}')
-        print(f'The lifetime extension will start in {year_of_extension}')
-        print(f'The repowering will start in {year_of_repowering}')
-    elif extension_short and substitution:
-        print(f'You opted for a short lifetime extension ({lifetime_extension} years) and a substitution')
+        print(f'{stages[0]} will start in {year_first_stage}')
+    elif len(stages) == 2:
+        print(f'You opted for a ({stages[0]}) ({lifetime_extension} years) and a {stages[1]}')
         print(f'The initial turbine was commissioned in {commissioning_year_i}')
-        print(f'The lifetime extension will start in {year_of_extension}')
-        print(f'The substitution will start in {year_of_repowering}')
-    elif extension_long and repowering:
-        print(f'You opted for a long lifetime extension ({lifetime_extension} years) and a repowering')
-        print(f'The initial turbine was commissioned in {commissioning_year_i}')
-        print(f'The lifetime extension will start in {year_of_extension}')
-        print(f'The repowering will start in {year_of_repowering}')
-    elif extension_long and substitution:
-        print(f'You opted for a long lifetime extension ({lifetime_extension} years) and a substitution')
-        print(f'The initial turbine was commissioned in {commissioning_year_i}')
-        print(f'The lifetime extension will start in {year_of_extension}')
-        print(f'The substitution will start in {year_of_repowering}')
-    elif extension_short and not (repowering or substitution):
-        print(f'You opted for a short lifetime extension ({lifetime_extension} years) with no substitution or '
-              f'repowering afterwards')
-        print(f'The initial turbine was commissioned in {commissioning_year_i}')
-        print(f'The lifetime extension will start in {year_of_extension}')
-    elif extension_long and not (repowering or substitution):
-        print(f'You opted for a long lifetime extension ({lifetime_extension} years) with no substitution or '
-              f'repowering afterwards')
-        print(f'The initial turbine was commissioned in {commissioning_year_i}')
-        print(f'The lifetime extension will start in {year_of_extension}')
-    elif repowering and not (extension_short or extension_long):
-        print(f'You opted for a repowering, without a previous lifetime extension')
-        print(f'The initial turbine was commissioned in {commissioning_year_i}')
-        print(f'The repowering will start in {year_of_repowering}')
-    elif substitution and not (extension_short or extension_long):
-        print(f'You opted for a substitution, without a previous lifetime extension')
-        print(f'The initial turbine was commissioned in {commissioning_year_i}')
-        print(f'The substitution will start in {year_of_repowering}')
+        print(f'{stages[0]} will start in {year_first_stage}')
+        print(f'{stages[1]} will start in {year_second_stage}')
 
     # save variables in a comment
     comment = (f'extension_long: {extension_long}, extension_short: {extension_short}, substitution: {substitution}, '
@@ -176,7 +156,7 @@ def lci_repowering(extension_long: bool, extension_short: bool, substitution: bo
                                      lci_materials_i=lci_materials, lifetime_extension=lifetime_extension,
                                      recycled_share_extension=recycled_share_steel_extension,
                                      substitution=substitution, year_of_extension=year_of_extension, comment=comment)
-        park_extended_act = extension_wind_park(park_location=park_location_i, park_name=park_name_i,
+        park_extended_act = extension_wind_park(scenario_name = scenario_name, park_location=park_location_i, park_name=park_name_i,
                                                 extension_turbine_act=turbine_act,
                                                 number_of_turbines_extended=number_of_turbines_extension)
         electricity_production_activities(park_name=park_name_i, park_location=park_location_i, park_power=park_power_i,
@@ -200,7 +180,7 @@ def lci_repowering(extension_long: bool, extension_short: bool, substitution: bo
                                      lci_materials_i=lci_materials, lifetime_extension=lifetime_extension,
                                      recycled_share_extension=recycled_share_steel_extension,
                                      substitution=substitution, year_of_extension=year_of_extension, comment=comment)
-        park_extended_act = extension_wind_park(park_location=park_location_i, park_name=park_name_i,
+        park_extended_act = extension_wind_park(scenario_name = scenario_name, park_location=park_location_i, park_name=park_name_i,
                                                 extension_turbine_act=turbine_act,
                                                 number_of_turbines_extended=number_of_turbines_extension)
         electricity_production_activities(park_name=park_name_i, park_location=park_location_i, park_power=park_power_i,
@@ -226,7 +206,7 @@ def lci_repowering(extension_long: bool, extension_short: bool, substitution: bo
                                      lci_materials_i=lci_materials, lifetime_extension=lifetime_extension,
                                      recycled_share_extension=recycled_share_steel_extension,
                                      substitution=substitution, year_of_extension=year_of_extension, comment=comment)
-        park_extended_act = extension_wind_park(park_location=park_location_i, park_name=park_name_i,
+        park_extended_act = extension_wind_park(scenario_name = scenario_name, park_location=park_location_i, park_name=park_name_i,
                                                 extension_turbine_act=turbine_act,
                                                 number_of_turbines_extended=number_of_turbines_extension)
         electricity_production_activities(park_name=park_name_i, park_location=park_location_i, park_power=park_power_i,
@@ -254,7 +234,7 @@ def lci_repowering(extension_long: bool, extension_short: bool, substitution: bo
                                      lci_materials_i=lci_materials, lifetime_extension=lifetime_extension,
                                      recycled_share_extension=recycled_share_steel_extension,
                                      substitution=substitution, year_of_extension=year_of_extension, comment=comment)
-        park_extended_act = extension_wind_park(park_location=park_location_i, park_name=park_name_i,
+        park_extended_act = extension_wind_park(scenario_name = scenario_name, park_location=park_location_i, park_name=park_name_i,
                                                 extension_turbine_act=turbine_act,
                                                 number_of_turbines_extended=number_of_turbines_extension)
         electricity_production_activities(park_name=park_name_i, park_location=park_location_i, park_power=park_power_i,
@@ -280,7 +260,7 @@ def lci_repowering(extension_long: bool, extension_short: bool, substitution: bo
                                      lci_materials_i=lci_materials, lifetime_extension=lifetime_substitution,
                                      recycled_share_extension=recycled_share_steel_extension,
                                      substitution=substitution, year_of_extension=year_of_extension, comment=comment)
-        park_extended_act = extension_wind_park(park_location=park_location_i, park_name=park_name_i,
+        park_extended_act = extension_wind_park(scenario_name = scenario_name,park_location=park_location_i, park_name=park_name_i,
                                                 extension_turbine_act=turbine_act,
                                                 number_of_turbines_extended=number_of_turbines_substitution,
                                                 substitution=substitution)
@@ -308,7 +288,7 @@ def lci_repowering(extension_long: bool, extension_short: bool, substitution: bo
                                      lci_materials_i=lci_materials, lifetime_extension=lifetime_extension,
                                      recycled_share_extension=recycled_share_steel_extension,
                                      substitution=substitution, year_of_extension=year_of_extension, comment=comment)
-        park_extended_act = extension_wind_park(park_location=park_location_i, park_name=park_name_i,
+        park_extended_act = extension_wind_park(scenario_name = scenario_name,park_location=park_location_i, park_name=park_name_i,
                                                 extension_turbine_act=turbine_act,
                                                 number_of_turbines_extended=number_of_turbines_extension,
                                                 substitution=substitution)
@@ -797,7 +777,7 @@ def life_extension(park_name: str, park_location: str,
     return extension_act
 
 
-def extension_wind_park(park_name: str, park_location: str, number_of_turbines_extended: int,
+def extension_wind_park(scenario_name : str, park_name: str, park_location: str, number_of_turbines_extended: int,
                         extension_turbine_act, substitution: bool = False):
     """
     It creates a wind park extension activity and adds the turbines as inputs. During a lifetime extension there
@@ -805,13 +785,13 @@ def extension_wind_park(park_name: str, park_location: str, number_of_turbines_e
     """
     # extension or substitution?
     if substitution:
-        name = 'substitution'
+        stage = 'substitution'
     else:
-        name = 'extension'
+        stage = 'extension'
 
     try:
         # create inventory for the wind park lifetime extension
-        extension_park_act = new_db.new_activity(name=park_name + f'_park_{name}', code=park_name + f'_park_{name}',
+        extension_park_act = new_db.new_activity(name=park_name + scenario_name + stage, code = park_name + scenario_name + stage,
                                                  location=park_location, unit='unit')
         extension_park_act.save()
         new_exc = extension_park_act.new_exchange(input=extension_park_act.key, amount=1.0, unit="unit",
@@ -945,75 +925,24 @@ def lca_wind_repowering(park_name: str, park_power: float, extension: bool, repo
     results_acts = {}
     for lci_phase in ['materials', 'manufacturing', 'transport', 'installation', 'maintenance', 'eol', False]:
         turbine_act = False
-        if extension and not lci_phase:
+        if lci_phase:
+            #create turbine phases
+            name_turbine_phase = park_name + scenario_name  + lci_phase
+            lci_phase_act = new_db.get(name_turbine_phase)
+
+        elif not lci_phase:
+            # different activity names
             # turbine
-            name_turbine = park_name + '_extension'
-            name_turbine_kwh = park_name + '_turbine_extension_kwh'
+            name_turbine = park_name + scenario_name + 'turbine'
+            name_turbine_kwh = park_name + scenario_name + 'turbine_kWh'
             turbine_act = new_db.get(name_turbine)
             turbine_kwh_act = new_db.get(name_turbine_kwh)
 
             # park
-            name_park = park_name + '_park_extension'
-            name_park_kwh = park_name + '_park_extension_kwh'
+            name_park = park_name + scenario_name + 'park'
+            name_park_kwh = park_name + scenario_name + 'park_kWh'
             park_act = new_db.get(name_park)
             park_kwh_act = new_db.get(name_park_kwh)
-
-            name_surname = 'extension'
-
-        elif extension and lci_phase:
-            if lci_phase == 'installation':
-                continue
-            # turbine lci phases
-            name_turbine_phase = park_name + '_extension_' + lci_phase
-            lci_phase_act = new_db.get(name_turbine_phase)
-
-            name_surname = 'extension'
-
-        if substitution and not lci_phase:
-            # turbine
-            name_turbine = park_name + '_substitution'
-            name_turbine_kwh = park_name + '_turbine_substitution_kwh'
-            turbine_act = new_db.get(name_turbine)
-            turbine_kwh_act = new_db.get(name_turbine_kwh)
-
-            # park
-            name_park = park_name + '_park_substitution'
-            name_park_kwh = park_name + '_park_substitution_kwh'
-            park_act = new_db.get(name_park)
-            park_kwh_act = new_db.get(name_park_kwh)
-
-            name_surname = 'substitution'
-
-        elif substitution and lci_phase:
-            if lci_phase == 'installation':
-                continue
-            # turbine lci phases
-            name_turbine_phase = park_name + '_substitution_' + lci_phase
-            lci_phase_act = new_db.get(name_turbine_phase)
-
-            name_surname = 'substitution'
-
-        elif repowering and not lci_phase:
-            # turbine
-            name_turbine = park_name + '_repowering_single_turbine'
-            name_turbine_kwh = park_name + '_repowering_turbine_kwh'
-            turbine_act = new_db.get(name_turbine)
-            turbine_kwh_act = new_db.get(name_turbine_kwh)
-
-            # park
-            name_park = park_name + f'_repowering_{str(park_power)}'
-            name_park_kwh = park_name + '_repowering_park_kwh'
-            park_act = new_db.get(name_park)
-            park_kwh_act = new_db.get(name_park_kwh)
-
-            name_surname = 'repowering'
-
-        elif repowering and lci_phase:
-            # turbine lci phases
-            name_turbine_phase = park_name + '_repowering_' + lci_phase
-            lci_phase_act = new_db.get(name_turbine_phase)
-
-            name_surname = 'repowering'
 
         name_activity = {0: 'turbine (FU unit)', 1: 'turbine (FU kWh)', 2: 'park (FU unit)', 3: 'park (FU kWh)'}
         if not turbine_act:
@@ -1024,7 +953,7 @@ def lca_wind_repowering(park_name: str, park_power: float, extension: bool, repo
                 lca_obj.switch_method(m)
                 lca_obj.lcia()
                 results[m[1]] = lca_obj.score
-            results_acts[f'{lci_phase}_{name_surname}'] = results
+            results_acts[f'{lci_phase}_{scenario_name}'] = results
         elif turbine_act:
             acts = [turbine_act, turbine_kwh_act, park_act, park_kwh_act]
             for i, act in enumerate(acts):
@@ -1041,7 +970,7 @@ def lca_wind_repowering(park_name: str, park_power: float, extension: bool, repo
     return df
 
 
-def test(park_name: str, extension: bool, repowering: bool, substitution: bool,
+def test(scenario_name:str, park_name: str, stages, extension_short: bool, extension_long: bool, repowering: bool, substitution: bool,
          lci_phase: Optional[Literal['materials', 'manufacturing', 'transport', 'installation', 'maintenance', 'eol']],
          park_power: float = None):
     turbine_ex = None
@@ -1049,83 +978,52 @@ def test(park_name: str, extension: bool, repowering: bool, substitution: bool,
     park_ex = None
     park_kwh_ex = None
     lci_phase_ex = None
-    if extension and not lci_phase:
-        # turbine
-        name_turbine = park_name + '_extension'
-        name_turbine_kwh = park_name + '_turbine_extension_kwh'
-        turbine_act = new_db.get(name_turbine)
-        turbine_kwh_act = new_db.get(name_turbine_kwh)
-        turbine_ex = [e for e in turbine_act.exchanges()]
-        turbine_kwh_ex = [e for e in turbine_kwh_act.exchanges()]
-        # park
-        name_park = park_name + '_park_extension'
-        name_park_kwh = park_name + '_park_extension_kwh'
-        park_act = new_db.get(name_park)
-        park_kwh_act = new_db.get(name_park_kwh)
-        park_ex = [e for e in park_act.exchanges()]
-        park_kwh_ex = [e for e in park_kwh_act.exchanges()]
+    n = 0
+    stages = []
+    #we build a vector "stages" that includes all stages in the scenario
+    if extension_short:
+        stages = np.append(stages, "extension_short")
+    if extension_long:
+        stages =  np.append(stages, "extension_long")
+    if substitution:
+        stages = np.append(stages, "substitution")
+    if repowering:
+        stages = np.append(stages, "repowering")
 
-    elif extension and lci_phase:
-        # turbine lci phases
-        name_turbine_phase = park_name + '_extension_' + lci_phase
-        lci_phase_act = new_db.get(name_turbine_phase)
-        lci_phase_ex = [e for e in lci_phase_act.exchanges()]
-    if substitution and not lci_phase:
-        # turbine
-        name_turbine = park_name + '_substitution'
-        name_turbine_kwh = park_name + '_turbine_substitution_kwh'
-        turbine_act = new_db.get(name_turbine)
-        turbine_kwh_act = new_db.get(name_turbine_kwh)
-        turbine_ex = [e for e in turbine_act.exchanges()]
-        turbine_kwh_ex = [e for e in turbine_kwh_act.exchanges()]
-        # park
-        name_park = park_name + '_park_substitution'
-        name_park_kwh = park_name + '_park_substitution_kwh'
-        park_act = new_db.get(name_park)
-        park_kwh_act = new_db.get(name_park_kwh)
-        park_ex = [e for e in park_act.exchanges()]
-        park_kwh_ex = [e for e in park_kwh_act.exchanges()]
+    for stages:
+        if not lci_phase:
+            # turbine
+            name_turbine = park_name + scenario_name + stage + '_turbine'
+            name_turbine_kwh = park_name + scenario_name + stage + '_turbine_kwh'
+            turbine_act = new_db.get(name_turbine)
+            turbine_kwh_act = new_db.get(name_turbine_kwh)
+            turbine_ex = [e for e in turbine_act.exchanges()]
+            turbine_kwh_ex = [e for e in turbine_kwh_act.exchanges()]
+            # park
+            name_park = park_name + scenario_name + stage + '_park'
+            name_park_kwh = park_name + '_park_extension_kwh'
+            park_act = new_db.get(name_park)
+            park_kwh_act = new_db.get(name_park_kwh)
+            park_ex = [e for e in park_act.exchanges()]
+            park_kwh_ex = [e for e in park_kwh_act.exchanges()]
 
-    elif substitution and lci_phase:
-        # turbine lci phases
-        name_turbine_phase = park_name + '_substitution_' + lci_phase
-        lci_phase_act = new_db.get(name_turbine_phase)
-        lci_phase_ex = [e for e in lci_phase_act.exchanges()]
-    elif repowering and not lci_phase:
-        # turbine
-        name_turbine = park_name + '_repowering_single_turbine'
-        name_turbine_kwh = park_name + '_repowering_turbine_kwh'
-        turbine_act = new_db.get(name_turbine)
-        turbine_kwh_act = new_db.get(name_turbine_kwh)
-        turbine_ex = [e for e in turbine_act.exchanges()]
-        turbine_kwh_ex = [e for e in turbine_kwh_act.exchanges()]
-        # park
-        name_park = park_name + f'_repowering_{str(park_power)}'
-        name_park_kwh = park_name + '_repowering_park_kwh'
-        park_act = new_db.get(name_park)
-        park_kwh_act = new_db.get(name_park_kwh)
-        park_ex = [e for e in park_act.exchanges()]
-        park_kwh_ex = [e for e in park_kwh_act.exchanges()]
-    elif repowering and lci_phase:
-        # turbine lci phases
-        name_turbine_phase = park_name + '_repowering_' + lci_phase
-        lci_phase_act = new_db.get(name_turbine_phase)
-        lci_phase_ex = [e for e in lci_phase_act.exchanges()]
+        elif lci_phase:
+            # turbine lci phases
+            name_turbine_phase = park_name + scenario_name + lci_phase
+            lci_phase_act = new_db.get(name_turbine_phase)
+            lci_phase_ex = [e for e in lci_phase_act.exchanges()]
 
-    return turbine_ex, turbine_kwh_ex, park_ex, park_kwh_ex, lci_phase_ex
+        return turbine_ex, turbine_kwh_ex, park_ex, park_kwh_ex, lci_phase_ex
 
 
-def lci_excel_output(park_name, extension, repowering, substitution, park_power_repowering, scenario_name, method_name):
+def lci_excel_output(scenario_name : str, park_name:str, extension_short:bool, extension_long:bool,
+                     repowering:bool, substitution:bool,
+                     park_power_repowering : float, method_name: str):
     cwd = os.getcwd()
     file_name = f'results_{park_name}_{scenario_name}.xlsx'
     file_path = os.path.join(cwd, file_name)
     with pd.ExcelWriter(file_path, engine='xlsxwriter') as writer:
-        if extension:
-            turbine_act_code = park_name + '_extension'
-        elif substitution:
-            turbine_act_code = park_name + '_substitution'
-        elif repowering:
-            turbine_act_code = park_name + '_repowering_single_turbine'
+        turbine_act_code = park_name + scenario_name + '_turbine'
         comment = new_db.get(turbine_act_code)._data['comment']
         new_comment = re.sub(r'(\d+), (\d+|-\d+)', r'\1; \2', comment)
         splitted = new_comment.split(',')
@@ -1142,7 +1040,9 @@ def lci_excel_output(park_name, extension, repowering, substitution, park_power_
         for lci_phase in ['materials', 'manufacturing', 'transport', 'installation', 'maintenance', 'eol', False]:
             if extension and lci_phase:
                 if lci_phase == 'materials':
-                    output = test(park_name=park_name, extension=extension,
+                    output = test(scenario_name = scenario_name, park_name=park_name,
+                                  extension_short=extension_short,
+                                  extension_long = extension_long,
                                   repowering=False, substitution=False, park_power=park_power_repowering,
                                   lci_phase=lci_phase)
                     amount = []
@@ -1168,7 +1068,9 @@ def lci_excel_output(park_name, extension, repowering, substitution, park_power_
                     sheet_name = f'lci_{lci_phase}_extension'
                     df.to_excel(writer, sheet_name=sheet_name, index=False)
                 elif lci_phase != 'installation':
-                    output = test(park_name=park_name, extension=extension,
+                    output = test(scenario_name=scenario_name, park_name=park_name,
+                                  extension_short=extension_short,
+                                  extension_long = extension_long,
                                   repowering=False, substitution=False, park_power=park_power_repowering,
                                   lci_phase=lci_phase)
                     amount = []
@@ -1191,7 +1093,9 @@ def lci_excel_output(park_name, extension, repowering, substitution, park_power_
             elif extension and not lci_phase:
                 sheet_names = {0: 'turbine extension (FU unit)', 1: 'turbine extension (FU kWh)',
                                2: 'park extension (FU unit)', 3: 'park extension (FU kWh)'}
-                output = test(park_name=park_name, extension=extension,
+                output = test(scenario_name=scenario_name,park_name=park_name,
+                              extension_short=extension_short,
+                              extension_long = extension_long,
                               repowering=False, substitution=False, park_power=park_power_repowering,
                               lci_phase=None)
 
@@ -1221,9 +1125,10 @@ def lci_excel_output(park_name, extension, repowering, substitution, park_power_
                     df.to_excel(writer, sheet_name=sheet_name, index=False)
             if substitution and lci_phase:
                 if lci_phase == 'materials':
-                    output = test(park_name=park_name, extension=False,
-                                  repowering=False, substitution=True, park_power=park_power_repowering,
-                                  lci_phase=lci_phase)
+                    output = test(scenario_name = scenario_name, park_name=park_name,
+                                  extension_short=extension_short,
+                                  extension_long=extension_long, repowering=False, substitution=True,
+                                  park_power=park_power_repowering,lci_phase=lci_phase)
                     amount = []
                     unit = []
                     input_act = []
@@ -1247,7 +1152,9 @@ def lci_excel_output(park_name, extension, repowering, substitution, park_power_
                     sheet_name = f'lci_{lci_phase}_substitution'
                     df.to_excel(writer, sheet_name=sheet_name, index=False)
                 elif lci_phase != 'installation':
-                    output = test(park_name=park_name, extension=False,
+                    output = test(scenario_name = scenario_name,park_name=park_name,
+                                  extension_short=extension_short,
+                                  extension_long = extension_long,
                                   repowering=False, substitution=True, park_power=park_power_repowering,
                                   lci_phase=lci_phase)
                     amount = []
@@ -1270,7 +1177,8 @@ def lci_excel_output(park_name, extension, repowering, substitution, park_power_
             elif substitution and not lci_phase:
                 sheet_names = {0: 'turbine substitution (FU unit)', 1: 'turbine substitution (FU kWh)',
                                2: 'park substitution (FU unit)', 3: 'park substitution (FU kWh)'}
-                output = test(park_name=park_name, extension=False,
+                output = test(scenario_name = scenario_name,park_name=park_name, extension_short=extension_short,
+                                  extension_long = extension_long,
                               repowering=False, substitution=True, park_power=park_power_repowering,
                               lci_phase=None)
 
@@ -1319,34 +1227,39 @@ if __name__ == "__main__":
     new_db = bd.Database('new_db')
     pass
 
+
+
+####### EXAMPLES #######
 # example Laura:
-    lci_repowering(extension_long=True, extension_short=False, substitution=False, repowering=True,
-                   park_name_i='park_example_4', park_power_i=21.6, number_of_turbines_i=12,
+    lci_repowering(scenario_name = , extension_long=True, extension_short=False, substitution= False, repowering=True,
+                   park_name_i='Cabril_I', park_power_i=16.2, number_of_turbines_i=9,
                    park_location_i='PT',
-                   park_coordinates_i=(40.7927, -8.5085),
-                   manufacturer_i='Vestas',
-                   rotor_diameter_i=90,
-                   turbine_power_i=1.8, hub_height_i=100, commissioning_year_i=2008,
+                   park_coordinates_i=(40.98, -8.045),
+                   manufacturer_i='Enercon',
+                   rotor_diameter_i=66,
+                   turbine_power_i=1.8, hub_height_i=84.35, commissioning_year_i=2002,
                    recycled_share_steel_i=None,
-                   lifetime_i=25,
+                   lifetime_i=22,
                    electricity_mix_steel_i=None,
-                   generator_type_i='gb_dfig',
-                   lifetime_extension=25, number_of_turbines_extension=12,
-                   cf_extension=0.30, attrition_rate_extension=0.009,
-                   park_power_repowering=21.6,
+                   generator_type_i='dd_eesg',
+                   lifetime_extension=10, number_of_turbines_extension=9,
+                   cf_extension=0.2080, attrition_rate_extension=0.009,
+                   lifetime_substitution = 25, number_of_turbines_substitution= 9,
+                   cf_substitution = 0.2080, attrition_rate_substitution= 0.009,
+                   park_power_repowering=18,
                    number_of_turbines_repowering=4,
-                   manufacturer_repowering='Siemens Gamesa',
-                   rotor_diameter_repowering=110,
-                   turbine_power_repowering=5.4,
+                   manufacturer_repowering='Enercon',
+                   rotor_diameter_repowering=114,
+                   turbine_power_repowering=4.5,
                    hub_height_repowering=120,
-                   generator_type_repowering='gb_dfig',
-                   electricity_mix_steel_repowering='Norway',
+                   generator_type_repowering='dd_eesg',
+                   electricity_mix_steel_repowering='Europe',
                    lifetime_repowering=25,
-                   cf_repowering=0.42,
+                   cf_repowering=0.293,
                    attrition_rate_repowering=0.009
                    )
-lci_excel_output(park_name='park_example_4', extension=True, repowering=False, substitution=False, park_power_repowering=21.6, scenario_name='extension', method_name='EF v3.1')
-lci_excel_output(park_name='park_example_4', extension=False, repowering=True, substitution=False, park_power_repowering=21.6, scenario_name='repowering', method_name='EF v3.1')
+lci_excel_output(park_name='Cabril_I_short_extension', extension=True, repowering=False, substitution=False, park_power_repowering=0, scenario_name='extension_long', method_name='EF v3.1')
+lci_excel_output(park_name='Cabril_I_substitution', extension=False, repowering=True, substitution=False, park_power_repowering=0, scenario_name='repowering', method_name='EF v3.1')
 
 
 # example of use lifetime extension long (no substitution or repowering):

@@ -216,7 +216,7 @@ def plot_materials(x, y, residuals, interpolation_eq, confidence, xlabel: str, y
                    adjusted_plot=True):
     """
     for the scatter points of x and y, given the residuals, fitting curve (interpolation_eq), and confidence 95% (value
-    that stablishes the minimim and maximum deviation from the mean that guarantees that 95% of the values will fall in
+    that establishes the minimimum and maximum deviation from the mean that guarantees that 95% of the values will fall in
     that range), it shows the corresponding plot. It's not saving it, just showing.
     Note:
     The variable adjusted_plot allows to extend the plot from 0 to 15 MW.
