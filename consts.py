@@ -239,9 +239,5 @@ REPLACEMENT_BASELINE = {'steel': 0.84, 'c_steel': 0.84, 'iron': 1, 'aluminium': 
 cwd = os.getcwd()
 VESTAS_FILE = os.path.join(cwd, 'clean_data.xlsx')
 
-# variables to be set by the user
-PROJECT_NAME = 'repowering'
-SPOLD_FILES = r"C:\ecoinvent_data\3.9.1\cutoff\datasets"
-
 
 
