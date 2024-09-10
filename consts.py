@@ -219,6 +219,14 @@ secondary_steel = {'other': 0.4162, '2012': 0.4304, '2013': 0.4172, '2014': 0.40
 
 PRINTED_WARNING_STEEL = False
 
+# rare earth shares
+RARE_EARTH_DICT = {'Praseodymium': {'dd_eesg': 9, 'dd_pmsg': 35, 'gb_pmsg': 4, 'gb_dfig': 0},
+                   'Neodymium': {'dd_eesg': 28, 'dd_pmsg': 180, 'gb_pmsg': 51, 'gb_dfig': 12},
+                   'Dysprosium': {'dd_eesg': 6, 'dd_pmsg': 17, 'gb_pmsg': 6, 'gb_dfig': 2},
+                   'Terbium': {'dd_eesg': 1, 'dd_pmsg': 7, 'gb_pmsg': 1, 'gb_dfig': 0},
+                   'Boron': {'dd_eesg': 0, 'dd_pmsg': 6, 'gb_pmsg': 1, 'gb_dfig': 0}
+                   }
+
 # scenarios lifetime extension, replacement, repowering
 LONG_EXTENSION = {'steel': 0.08, 'c_steel': 0.08, 'iron': 1, 'aluminium': 0.65, 'copper': 0.81,
                   'plastics': 1, 'others': 1, 'foundations': 0, 'electronics_and_electrics': 0}
@@ -227,16 +235,86 @@ SHORT_EXTENSION = {'steel': 0.01, 'c_steel': 0.01, 'iron': 0.34, 'aluminium': 0,
 REPLACEMENT_BASELINE = {'steel': 0.84, 'c_steel': 0.84, 'iron': 1, 'aluminium': 0.65, 'copper': 0.81,
                         'plastics': 1, 'others': 1, 'foundations': 0, 'electronics_and_electrics': 0}
 
-RARE_EARTH_DICT = {'Praseodymium': {'dd_eesg': 9, 'dd_pmsg': 35, 'gb_pmsg': 4, 'gb_dfig': 0},
-                   'Neodymium': {'dd_eesg': 28, 'dd_pmsg': 180, 'gb_pmsg': 51, 'gb_dfig': 12},
-                   'Dysprosium': {'dd_eesg': 6, 'dd_pmsg': 17, 'gb_pmsg': 6, 'gb_dfig': 2},
-                   'Terbium': {'dd_eesg': 1, 'dd_pmsg': 7, 'gb_pmsg': 1, 'gb_dfig': 0},
-                   'Boron': {'dd_eesg': 0, 'dd_pmsg': 6, 'gb_pmsg': 1, 'gb_dfig': 0}
-                   }
+# scenarios end of life of materials
+EOL_RATES = {
+    'Low alloy steel': {'recycling_rate':{'1': 0.9, '2': 0.9, '3': 0.52, '4':0.52},
+                        'incineration_rate':{'1':0, '2':0, '3':0, '4':0},
+                        'landfill_rate':{'1':0.1, '2':0.1, '3':0.48, '4':0.48}},
+    'Low alloy steel_foundations': {'recycling_rate':{'1': 0.9, '2': 0.9, '3': 0.52, '4' :0.52},
+                        'incineration_rate':{'1':0, '2':0, '3':0, '4':0},
+                        'landfill_rate':{'1':0.1, '2':0.1, '3':0.48, '4':0.48}},
+    'Chromium steel': {'recycling_rate':{'1': 0.9, '2': 0.9,'3': 0.52, '4' :0.52},
+                        'incineration_rate':{'1':0, '2':0, '3':0, '4' :0},
+                        'landfill_rate':{'1':0.1, '2':0.1, '3':0.48, '4':0.48}},
+    'Chromium steel_foundations': {'recycling_rate':{'1': 0.9, '2': 0.9, '3': 0.52, '4':0.52},
+                        'incineration_rate':{'1':0, '2':0, '3' :0, '4':0},
+                        'landfill_rate':{'1':0.1, '2':0.1, '3':0.48, '4':0.48}},
+    'Cast iron':{'recycling_rate':{'1': 0.9, '2': 0.9, '3': 0.52, '4':0.52},
+                'incineration_rate':{'1':0, '2':0, '3':0, '4':0},
+                'landfill_rate':{'1':0.1, '2':0.1, '3':0.48, '4':0.48}},
+    'Aluminium': {'recycling_rate':{'1': 0.9,'2': 0.9, '3': 0.52, '4':0.42},
+                  'incineration_rate':{'1':0, '2':0, '3':0, '4':0},
+                  'landfill_rate':{'1':0.1, '2':0.1, '3':0.48, '4':0.58}},
+    'Copper': {'recycling_rate':{'1': 0.9, '2': 0.9, '3': 0.52, '4':0.42},
+                'incineration_rate':{'1':0, '2':0, '3':0, '4':0},
+                'landfill_rate':{'1':0.1, '2':0.1, '3':0.48, '4':0.58}},
+    'Copper_foundations': {'recycling_rate':{'1': 0.9, '2': 0.9, '3': 0.52, '4': 0.42},
+                'incineration_rate':{'1':0, '2':0, '3':0, '4':0},
+                'landfill_rate':{'1':0.1, '2':0.1, '3':0.48, '4':0.58}},
+    'Epoxy resin': {'recycling_rate':{'1': 0, '2': 0.7, '3': 0, '4': 0},
+                'incineration_rate':{'1': 1, '2': 0.3, '3': 1, '4': 1},
+                'landfill_rate':{'1': 0, '2': 0, '3': 0, '4': 0}},
+    'Fiberglass': {'recycling_rate':{'1': 0, '2': 0.7, '3': 0, '4': 0},
+                'incineration_rate':{'1': 1, '2': 0.3, '3': 1, '4': 1},
+                'landfill_rate':{'1': 0, '2': 0, '3': 0, '4': 0}},
+    'Rubber': {'recycling_rate':{'1': 0, '2': 0.7, '3': 0, '4': 0},
+                'incineration_rate':{'1': 1, '2': 0.3, '3': 1, '4': 1},
+                'landfill_rate':{'1': 0, '2': 0, '3': 0, '4': 0}},
+    'PUR': {'recycling_rate':{'1': 0, '2': 0, '3': 0, '4': 0},
+            'incineration_rate':{'1': 1, '2': 1, '3': 1, '4': 1},
+            'landfill_rate':{'1': 0, '2': 0, '3': 0, '4': 0}},
+    'PVC': {'recycling_rate':{'1': 0, '2': 0, '3': 0, '4': 0},
+            'incineration_rate':{'1': 1, '2': 1, '3': 1, '4': 1},
+            'landfill_rate':{'1': 0, '2': 0, '3': 0, '4': 0}},
+    'PE': {'recycling_rate':{'1': 0, '2': 0, '3': 0, '4': 0},
+            'incineration_rate':{'1': 1, '2': 1, '3': 1, '4': 1},
+            'landfill_rate':{'1': 0, '2': 0, '3': 0, '4': 0}},
+    'electronics': {'recycling_rate':{'1': 0, '2': 0.5, '3': 0, '4': 0},
+                    'incineration_rate':{'1': 0, '2': 0, '3': 0, '4': 0},
+                    'landfill_rate':{'1': 1, '2': 0.5, '3': 1, '4': 1}},
+    'Electrics': {'recycling_rate':{'1': 0, '2': 0.5, '3': 0, '4': 0},
+                  'incineration_rate':{'1': 0, '2': 0, '3': 0, '4': 0},
+                  'landfill_rate':{'1': 1, '2': 0.5, '3': 1, '4': 1}},
+    'Lubricating oil': {'recycling_rate':{'1': 0, '2': 0, '3': 0, '4': 0},
+                'incineration_rate':{'1': 1, '2': 1, '3': 1, '4': 1},
+                'landfill_rate':{'1': 0, '2': 0, '3': 0, '4': 0}},
+    'Ethyleneglycol': {'recycling_rate':{'1': 0, '2': 0, '3': 0, '4': 0},
+                'incineration_rate':{'1': 1, '2': 1, '3': 1, '4': 1},
+                'landfill_rate':{'1': 0, '2': 0, '3': 0, '4': 0}},
+    'Praseodymium': {'recycling_rate':{'1': 0, '2':0.7, '3': 0.01, '4': 0},
+                    'incineration_rate':{'1': 0, '2': 0, '3': 0, '4': 0},
+                    'landfill_rate':{'1': 1, '2': 0.3, '3': 0.99, '4': 1}},
+    'Neodymium': {'recycling_rate':{'1': 0, '2':0.7, '3': 0.01, '4': 0},
+                  'incineration_rate':{'1': 0, '2': 0, '3': 0, '4': 0},
+                  'landfill_rate':{'1': 1, '2': 0.3, '3': 0.99, '4': 1}},
+    'Dysprosium': {'recycling_rate':{'1': 0, '2':0.7, '3': 0.01, '4': 0},
+                   'incineration_rate':{'1': 0, '2': 0, '3': 0, '4': 0},
+                   'landfill_rate':{'1': 1, '2': 0.3, '3': 0.99, '4': 1}},
+    'Terbium': {'recycling_rate':{'1': 0, '2':0.7, '3': 0.01, '4': 0},
+                'incineration_rate':{'1': 0, '2': 0, '3': 0, '4': 0},
+                'landfill_rate':{'1': 1, '2': 0.3, '3': 0.99, '4': 1}},
+    'Boron': {'recycling_rate':{'1': 0, '2':0.7, '3': 0.01, '4': 0},
+              'incineration_rate':{'1': 0, '2': 0, '3': 0, '4': 0},
+              'landfill_rate':{'1': 1, '2': 0.3, '3': 0.99, '4': 1}},
+    'Concrete_foundations': {'recycling_rate':{'1': 0, '2': 0.5, '3': 0, '4': 0},
+                            'incineration_rate':{'1': 0, '2': 0, '3': 0, '4': 0},
+                            'landfill_rate':{'1': 1, '2': 0.5, '3': 1, '4': 1}}
+}
 
-PROJECT_NAME = 'extension'
-SPOLD_FILES = r"C:\Users\1439891\OneDrive - UAB\Documentos\ecoinvent 3.9.1_cutoff_ecoSpold02\datasets"
 
+# vestas_file path
 cwd = os.getcwd()
 VESTAS_FILE = os.path.join(cwd, 'clean_data.xlsx')
+
+
 
