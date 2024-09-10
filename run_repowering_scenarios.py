@@ -8,18 +8,70 @@ import bw2io as bi
 import consts
 
 # variables to be set by the user
-PROJECT_NAME = 'repowering_Cabril_I'
-
-#### Upload table with scenario data
-path_scenario_data = r'C:\Users\34660\UAB\LIVENlabTEAMS - JW4A - JW4A\WP4 - labs\Portugal\Repowering\WindTrace repowering\input_scenario_data.csv'
-
-table_scenarios = pd.read_csv(path_scenario_data,
-                              index_col = 0) #SEGURAMENT S'HA D'EDITAR AIXÒ
+PROJECT_NAME = 'repowering_Cabril_I' ###també  posat a consts.py (perque és d'on ho treu la funció)
 
 #### LCA settings ####
 # LCI data - Ecoinvent file path
 SPOLD_FILES = r"C:\Users\1439891\OneDrive - UAB\Documentos\ecoinvent 3.9.1_cutoff_ecoSpold02\datasets" #r"C:\ecoinvent_data\3.9.1\cutoff\datasets"
 method_name = 'EF v3.1'
+
+### define path scenario data
+path_scenario_data = r"C:\Users\1439891\UAB\LIVENlabTEAMS - JW4A - JW4A\WP4 - labs\Portugal\Repowering\WindTrace repowering\input_scenario_data.csv"
+
+#######
+
+#### Upload table with scenario data
+table_scenarios = pd.read_csv(path_scenario_data,
+                              index_col = 0,
+                              sep = ";",
+                              dtype = {"scenario_name": str,
+                                       "scenario_name2": str,
+                                       "extension_long": bool,
+                                       "extension_short": bool,
+                                       "substitution": bool,
+                                       "repowering": bool,
+                                       "park_name_i" : str,
+                                       "park_power_i" : float,
+                                       "number_of_turbines_i": int,
+                                       "park_location_i" : str, #'PT'
+                                       "park_coordinates_i" : str,
+                                       "manufacturer_i" : str, # ['Vestas', 'Siemens Gamesa', 'Nordex', 'Enercon', 'LM Wind']
+                                       "rotor_diameter_i" : float, #m
+                                       "turbine_power_i": float, #MW
+                                       "hub_height_i": float, #m
+                                       "commissioning_year_i" : int,
+                                       "recycled_share_steel_1" : float, #0.4
+                                       "lifetime_i": int,
+                                       "electricity_mix_steel_i": str, #'Norway', 'Europe', 'Poland'
+                                       "generator_type_i" : str, #'dd_eesg', 'dd_pmsg', 'gb_pmsg', 'gb_dfig'
+                                       "lifetime_extension": int,
+                                       "number_of_turbines_extension": int,
+                                       "cf_extension": float,
+                                       "attrition_rate_extension": float,
+                                       "lifetime_substitution": int,
+                                       "number_of_turbines_substitution": int,
+                                       "cf_substitution": float,
+                                       "attrition_rate_substitution": float,
+                                       "recycled_share_steel_extension": float, #0.4
+                                       "park_power_repowering": float, #MW
+                                       "number_of_turbines_repowering": int,
+                                       "manufacturer_repowering": str, #['Vestas', 'Siemens Gamesa', 'Nordex', 'Enercon', 'LM Wind']
+                                       "rotor_diameter_repowering": float, #m
+                                       "turbine_power_repowering": float, #MW
+                                       "hub_height_repowering": float, #m
+                                       "generator_type_repowering": str, #'dd_eesg', 'dd_pmsg', 'gb_pmsg', 'gb_dfig'
+                                       "electricity_mix_steel_repowering": str, #'Norway', 'Europe', 'Poland'
+                                       "lifetime_repowering": int, #years
+                                       "recycled_share_steel_repowering": float,
+                                       "cf_repowering": float,
+                                       "attrition_rate_repowering" : float,
+                                       "land_use_permanent_intensity_repowering": float,
+                                       "land_cover_type_repowering": str, #'industrial'
+                                       "eol_scenario_repowering": int,
+                                       "eol": bool,
+                                       "transportation": bool,
+                                       "use_and_maintenance": bool,
+                                       "installation": bool}) #SEGURAMENT S'HA D'EDITAR AIXÒ
 
 
 ########
