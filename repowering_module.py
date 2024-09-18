@@ -1462,3 +1462,4 @@ lci_repowering(extension_long=True, extension_short=False, substitution=False, r
                attrition_rate_repowering=0.009)
 
 pass
+

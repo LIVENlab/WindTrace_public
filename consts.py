@@ -245,4 +245,3 @@ SPOLD_FILES = r"C:\ecoinvent_data\3.9.1\cutoff\datasets"
 NEW_DB_NAME = 'turbine_examples'
 
 
-
