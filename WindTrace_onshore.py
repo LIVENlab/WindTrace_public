@@ -20,10 +20,10 @@ if "cutoff391" not in bd.databases:
     ei.apply_strategies()
     ei.write_database()
 cutoff391 = bd.Database("cutoff391")
-if 'new_db' not in bd.databases:
-    new_db = bd.Database('new_db')
+if consts.NEW_DB_NAME not in bd.databases:
+    new_db = bd.Database(consts.NEW_DB_NAME)
     new_db.register()
-new_db = bd.Database('new_db')
+new_db = bd.Database(consts.NEW_DB_NAME)
 biosphere3 = bd.Database('biosphere3')
 
 
@@ -499,8 +499,8 @@ def manipulate_steel_activities(commissioning_year: int, recycled_share: float =
                                    name='steel production, converter, low-alloyed',
                                    location='RER')
         # Create a copy to manipulate them in the new_db database
-        recycled_act = recycled_ei.copy(database='new_db')
-        primary_act = primary_ei.copy(database='new_db')
+        recycled_act = recycled_ei.copy(database=consts.NEW_DB_NAME)
+        primary_act = primary_ei.copy(database=consts.NEW_DB_NAME)
         acts = [recycled_act, primary_act]
 
         # Manipulate both the primary and secondary activities in the same way
@@ -578,13 +578,13 @@ def manipulate_steel_activities(commissioning_year: int, recycled_share: float =
             if len(ch_act) == 0:
                 ch_steel_act_cutoff = [a for a in cutoff391 if a._data['name'] ==
                                        'market for steel, chromium steel 18/8'][0]
-                ch_steel_act_newdb = ch_steel_act_cutoff.copy(database='new_db')
+                ch_steel_act_newdb = ch_steel_act_cutoff.copy(database=consts.NEW_DB_NAME)
                 ch_steel_act_newdb._data['name'] = 'market for steel, chromium steel 18/8' + str(electricity_mix)
                 ch_steel_act_newdb.save()
                 ch_steel_electric_input = [e.input for e in ch_steel_act_newdb.technosphere() if
                                            'transport' not in e.input._data['name'] and e.input._data[
                                                'location'] == 'RER'][0]
-                ch_steel_act = ch_steel_electric_input.copy(database='new_db')
+                ch_steel_act = ch_steel_electric_input.copy(database=consts.NEW_DB_NAME)
                 ch_steel_act._data['name'] = 'steel production, electric, chromium steel 18/8' + str(electricity_mix)
                 ch_steel_act.save()
                 # Calculate the total amount of electricity inputs in the activity
@@ -1556,6 +1556,16 @@ def lci_wind_turbine(park_name: str, park_power: float, number_of_turbines: int,
         print("Park power: " + str(park_power), 'Number of turbines: ' + str(number_of_turbines) +
               'Unitary power: ' + str(turbine_power))
         print('Consider redoing the analysis if you think there was a mistake with any of the numbers')
+    if comment == '':
+        comment = (f'park_name: {park_name}, park_power: {park_power} MW, number_of_turbines: {number_of_turbines}, '
+                   f'park_location: {park_location}, park_coordinates: {park_coordinates}, manufacturer: {manufacturer}, '
+                   f'rotor_diameter: {rotor_diameter} m, turbine_power: {turbine_power} MW, hub_height: {hub_height} m, '
+                   f'commissioning_year: {commissioning_year}, generator_type: {generator_type}, '
+                   f'recycled_share_steel: {recycled_share_steel}, electricity_mix_steel: {electricity_mix_steel} '
+                   f'lifetime: {lifetime} years, land_use_permanent_intensity: {land_use_permanent_intensity} m2/MW,'
+                   f'land_cover_type: {land_cover_type}, eol_scenario: {eol_scenario}, cf: {cf*100} %, '
+                   f'annual attrition rate: {time_adjusted_cf}'
+                   )
     mass_materials_park = lci_materials(park_name=park_name, park_power=park_power,
                                         number_of_turbines=number_of_turbines,
                                         park_location=park_location, park_coordinates=park_coordinates,

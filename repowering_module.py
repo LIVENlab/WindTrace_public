@@ -1314,9 +1314,9 @@ if __name__ == "__main__":
         ei.write_database()
     cutoff391 = bd.Database("cutoff391")
     if 'new_db' not in bd.databases:
-        new_db = bd.Database('new_db')
+        new_db = bd.Database(consts.NEW_DB_NAME)
         new_db.register()
-    new_db = bd.Database('new_db')
+    new_db = bd.Database(consts.NEW_DB_NAME)
     pass
 
 # example Laura:
