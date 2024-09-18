@@ -28,7 +28,7 @@ The function allowing to create customized inventories is lci_wind_turbine(), wh
 Parameters without a default value must be filled. Parameters with a default value are not compulsory but can be adapted to the user needs.
 
 Examples of application:
-lci_wind_turbine(park_name='example', park_power=10.0, number_of_turbines=2, park_location='ES', park_coordinates='41.502, -1.126', manufacturer='Vestas', rotor_diameter=97, turbine_power=5.0, hub_height=110, commissioning_year=2015, generator_type='gb_dfig', recycled_share_steel=0.43, electricity_mix_steel='Europe', lifetime=20, eol_scenario=1, cf=0.24, time_adjusted_cf=0.009)
+`lci_wind_turbine(park_name='example', park_power=10.0, number_of_turbines=2, park_location='ES', park_coordinates='41.502, -1.126', manufacturer='Vestas', rotor_diameter=97, turbine_power=5.0, hub_height=110, commissioning_year=2015, generator_type='gb_dfig', recycled_share_steel=0.43, electricity_mix_steel='Europe', lifetime=20, eol_scenario=1, cf=0.24, time_adjusted_cf=0.009)`
 
 The inventories are given by unit of turbine, unit of park, and kWh (for both turbine and park). They are stored in a new database ('new_db') in your brightway2.5 project. In this example, the inventory codes would be:
 - Turbine (FU=unit): example_single_turbine
@@ -39,4 +39,4 @@ The inventories are given by unit of turbine, unit of park, and kWh (for both tu
 You can calculate the impacts of the park or an individual turbine of the park by calling lca_wind_turbine(). It returns two dictionaries: the first one being results per unit and the second one being results per kWh.
 If you want to analyse the whole park, you must set the parameter 'turbine' to False. Otherwise, a single turbine of the park will be analysed. By default, ReCiPe 2016 v1.03, midpoint (H) is used, but it can be manually changed by giving the variable 'method' another name of a method in Brightway. An example of another method below.
 Here an example of application for the whole park:
-lca_wind_turbine(park_name='example', park_power=10.0, method='EF v3.1', turbine=False)
+`lca_wind_turbine(park_name='example', park_power=10.0, method='EF v3.1', turbine=False)`
