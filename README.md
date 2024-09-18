@@ -3,30 +3,28 @@
 WindTrace, an open-source parametric life-cycle inventory model to create tailor-made inventories of onshore wind turbines and park fleets and assess their environmental impacts.
 
 The function allowing to create customized inventories is lci_wind_turbine(), which admits the following parameters:
-+----------------------------+-----------------------------------------------------------------------+-------------------------------------------+---------------------------------------------+
-| Parameter                   | Description                                                          | Default value                             | Type                                        |
-+----------------------------+-----------------------------------------------------------------------+-------------------------------------------+---------------------------------------------+
-| Park name                   | Name of the wind park                                                | No                                        | str                                         |
-| Park power                  | Total power of the wind park                                         | No                                        | float                                       |
-| Number of turbines          | Number of turbines in the wind park                                  | No                                        | int                                         |
-| Park location               | Abbreviation of the country (ISO 3166-1 alpha-2 codes)               | No                                        | str                                         |
-| Park coordinates            | WGS84 coordinates of the wind park (latitude, longitude)             | No                                        | tuple                                       |
-| Manufacturer                | Name of the turbine manufacturer (Vestas, Siemens, etc.)             | LM Wind                                   | str                                         |
-| Rotor diameter              | Diameter of the rotor (in meters)                                    | No                                        | int                                         |
-| Turbine rated power         | Nominal power of the individual turbines                             | No                                        | float                                       |
-| Hub height                  | Height of the turbine                                                | No                                        | float                                       |
-| Commissioning year          | Year when the turbine started operation                              | No                                        | int                                         |
-| Recycled steel share        | Share of recycled steel in the turbine                               | Data from Eurofer (2012-2021)             | float                                       |
-| Land use permanent intensity | Permanent direct land transformation per MW                         | 3000 m²/MW                                | float                                       |
-| Electricity mix steel       | Electricity mix for steel production                                 | Mix per Eurofer data by country           | Optional[Literal['Norway', 'Europe', 'Poland']] |
-| Generator type              | Gearbox and type of generator                                        | Doubly fed induction generator (gearbox)  | Optional[Literal['dd_eesg', 'dd_pmsg',      |
-|                            |                                                                       |                                           | 'gb_pmsg', 'gb_dfig']]                       |
-| Land cover type             | Land cover type prior to turbine installation                        | No                                        | str                                         |
-| End-of-life scenario        | Scenario based on material recycling rates                           | Baseline                                  | int                                         |
-| Lifetime                    | Expected lifetime of the turbine                                     | 20 years                                  | int                                         |
-| Capacity factor             | Ratio of average delivered electricity to maximum production         | 0.24                                      | float                                       |
-| Attrition rate              | Annual efficiency reduction due to wear (variable: time_adjusted_cf) | 0.009                                     | float                                       |
-+----------------------------+--------------------------------------------------------------+-------------------------------------------------+---------------------------------------------+
+| Parameter                   | Description                                                  | Default value                                   | Type                                                           |
+|-----------------------------|--------------------------------------------------------------|-------------------------------------------------|----------------------------------------------------------------|
+| Park name                   | Name of the wind park                                        | No                                              | str                                                            |
+| Park power                  | Total power of the wind park                                 | No                                              | float                                                          |
+| Number of turbines          | Number of turbines in the wind park                          | No                                              | int                                                            |
+| Park location               | Abbreviation of the country (ISO 3166-1 alpha-2 codes)       | No                                              | str                                                            |
+| Park coordinates            | WGS84 coordinates of the wind park (latitude, longitude)     | No                                              | tuple                                                          |
+| Manufacturer                | Name of the turbine manufacturer (Vestas, Siemens, etc.)     | LM Wind                                         | str                                                            |
+| Rotor diameter              | Diameter of the rotor (in meters)                            | No                                              | int                                                            |
+| Turbine rated power         | Nominal power of the individual turbines                     | No                                              | float                                                          |
+| Hub height                  | Height of the turbine                                        | No                                              | float                                                          |
+| Commissioning year          | Year when the turbine started operation                      | No                                              | int                                                            |
+| Recycled steel share        | Share of recycled steel in the turbine                       | Data from Eurofer (2012-2021)                   | Optional[Literal['dd_eesg', 'dd_pmsg', 'gb_pmsg', 'gb_dfig']]  |
+| Land use permanent intensity | Permanent direct land transformation per MW                 | 3000 m²/MW                                      | float                                                          |
+| Electricity mix steel       | Electricity mix for steel production                         | Mix per Eurofer data by country                 | Optional[Literal['Norway', 'Europe', 'Poland']]                |
+| Generator type              | Gearbox and type of generator                                | Doubly fed induction generator (gearbox)        | int                                                            |
+| Land cover type             | Land cover type prior to turbine installation                | No                                              | int                                                            |
+| End-of-life scenario        | Scenario based on material recycling rates                   | Baseline                                        | str                                                            |
+| Lifetime                    | Expected lifetime of the turbine                             | 20 years                                        | int                                                            |
+| Capacity factor             | Ratio of average delivered electricity to maximum production | 0.24                                            | float                                                          |
+| Attrition rate              | Annual efficiency reduction due to wear                      | 0.009                                           | float                                                          |
+
 Parameters without a default value must be filled. Parameters with a default value are not compulsory but can be adapted to the user needs.
 
 Examples of application:
