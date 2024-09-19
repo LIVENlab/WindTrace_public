@@ -339,7 +339,13 @@ def lci_repowering(extension_long: bool, extension_short: bool, substitution: bo
                                            use_and_maintenance=use_and_maintenance, installation=installation,
                                            comment=comment
                                            )
+        delete_land_use_repowering(park_name=park_name_repowering)
 
+
+def delete_land_use_repowering(park_name: str):
+    manufacturing_activity_name = f'{park_name}_installation'
+    manufacturing_activity = new_db.get(manufacturing_activity_name)
+    manufacturing_activity.biosphere().delete()
 
 def provisional_print(material, initial_amount, classification, share, final_amount):
     print(f'Material: {material}. Initial amount: {initial_amount}. '
