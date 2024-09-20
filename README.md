@@ -5,10 +5,10 @@ WindTrace is a python open-source parametric life-cycle inventory model to creat
 
 ## Getting started
 To get ready to use WindTrace, you must first create a virtual environment using the yaml file provided.
-WindTrace creates a Brightway2.5 project and a database within this project where all the inventories you create will be stored. Before you start, you must change the variables PROJECT_NAME, and NEW_DB_NAME in consts.py and choose the names that you wish. 
-IMPORTANT: at the moment WindTrace only works with Ecoinvent v3.9.1. In consts.py, you must change the SPOLD_FILES variable and choose the route where you have the spold files of this Ecoinvent version stored in your computer.
+WindTrace creates a Brightway2.5 project and a database within this project where all the inventories you create will be stored. Before you start, you must change the variables **PROJECT_NAME**, and **NEW_DB_NAME** in consts.py and choose the names that you wish. 
+IMPORTANT: at the moment WindTrace only works with **Ecoinvent v3.9.1**. In consts.py, you must change the **SPOLD_FILES** variable and choose the route where you have the spold files of this Ecoinvent version stored in your computer.
 
-In case you don't want to create wind turbine inventories yourself, you can import into Brightway the database in the folder turbine_examples (https://github.com/LIVENlab/WindTrace_public/tree/main/turbine_examples), where 2.0 MW, 4.5 MW, 6.0 MW and 8.0 MW turbines with different characteristics are sampled. As explained later, the individual turbines inventories are stored per unit of turbine under the code 'Park_name' + '_single_turbine'. The same inventories per kWh have the code 'Park_name' + '_turbine_kwh'. To know how the parameters where defined to create these inventories (the technical parameters of the turbine) you can check the comment in the 'Park_name' + '_single_turbine' inventory.
+In case you don't want to create wind turbine inventories yourself, you can import into Brightway the database in the folder turbine_examples (https://github.com/LIVENlab/WindTrace_public/tree/main/turbine_examples), where **2.0 MW, 4.5 MW, 6.0 MW and 8.0 MW turbines with different characteristics are sampled**. As explained later, the individual turbines inventories are stored per unit of turbine under the code 'Park_name' + '_single_turbine'. The same inventories per kWh have the code 'Park_name' + '_turbine_kwh'. To know how the parameters where defined to create these inventories (the technical parameters of the turbine) you can check the comment in the 'Park_name' + '_single_turbine' inventory.
 
 
 ## Parameters
