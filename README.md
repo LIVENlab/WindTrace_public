@@ -69,4 +69,4 @@ lca_wind_turbine(park_name='Garriguella', park_power=10.0, method='EF v3.1', tur
 
 If you use WindTrace for academic work please cite:
 
-Sierra, M., Muñoz-Liesa, J., Pérez-Sánchez, L. À., de Tomás-Pascual, A., & Madrid-López, C. (2024). _WindTrace: a parametric life-cycle inventory model for wind turbines. Unveiling the influence of technical parameters on environmental impacts_ [manuscript submitted for publication].
+Sierra-Montoya, M., Muñoz-Liesa, J., Pérez-Sánchez, L. À., de Tomás-Pascual, A., & Madrid-López, C. (2024). _WindTrace: a parametric life-cycle inventory model for wind turbines. Unveiling the influence of technical parameters on environmental impacts_ [manuscript submitted for publication].
