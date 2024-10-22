@@ -42,7 +42,7 @@ Parameters without a default value must be filled. Parameters with a default val
 ### Generation of Life Cycle Inventories: lci_wind_turbine()
 
 ```ruby
-lci_wind_turbine(park_name='Garriguella', park_power=10.0, number_of_turbines=2, park_location='ES', park_coordinates='41.502, -1.126', manufacturer='Vestas', rotor_diameter=97, turbine_power=5.0, hub_height=110, commissioning_year=2015, generator_type='gb_dfig', recycled_share_steel=0.43, electricity_mix_steel='Europe', lifetime=20, eol_scenario=1, cf=0.24, time_adjusted_cf=0.009)
+lci_wind_turbine(park_name='Garriguella', park_power=10.0, number_of_turbines=2, park_location='ES', park_coordinates=(41.502, -1.126), manufacturer='Vestas', rotor_diameter=97, turbine_power=5.0, hub_height=110, commissioning_year=2015, generator_type='gb_dfig', recycled_share_steel=0.43, electricity_mix_steel='Europe', lifetime=20, eol_scenario=1, cf=0.24, time_adjusted_cf=0.009)
 ```
 
 The inventories are given by unit of turbine, unit of park, and kWh (for both turbine and park). They are stored in a new database ('new_db') in your brightway2.5 project. In this example, the inventory codes would be:
@@ -54,11 +54,11 @@ The inventories are given by unit of turbine, unit of park, and kWh (for both tu
 For generating activities and calculating impacts for a given wind park with different input parameters, users must introduce different park_name parameters. For example, for two different electricity mixes for steel production in Garriguella wind park:
 
 ```ruby
-lci_wind_turbine(park_name='Garriguella_EMEurope', park_power=10.0, number_of_turbines=2, park_location='ES', park_coordinates='41.502, -1.126', manufacturer='Vestas', rotor_diameter=97, turbine_power=5.0, hub_height=110, commissioning_year=2015, generator_type='gb_dfig', recycled_share_steel=0.43, electricity_mix_steel='Europe', lifetime=20, eol_scenario=1, cf=0.24, time_adjusted_cf=0.009)
+lci_wind_turbine(park_name='Garriguella_EMEurope', park_power=10.0, number_of_turbines=2, park_location='ES', park_coordinates=(41.502, -1.126), manufacturer='Vestas', rotor_diameter=97, turbine_power=5.0, hub_height=110, commissioning_year=2015, generator_type='gb_dfig', recycled_share_steel=0.43, electricity_mix_steel='Europe', lifetime=20, eol_scenario=1, cf=0.24, time_adjusted_cf=0.009)
 ```
 
 ```ruby
-lci_wind_turbine(park_name='Garriguella_EMPoland', park_power=10.0, number_of_turbines=2, park_location='ES', park_coordinates='41.502, -1.126', manufacturer='Vestas', rotor_diameter=97, turbine_power=5.0, hub_height=110, commissioning_year=2015, generator_type='gb_dfig', recycled_share_steel=0.43, electricity_mix_steel='Poland', lifetime=20, eol_scenario=1, cf=0.24, time_adjusted_cf=0.009)
+lci_wind_turbine(park_name='Garriguella_EMPoland', park_power=10.0, number_of_turbines=2, park_location='ES', park_coordinates=(41.502, -1.126), manufacturer='Vestas', rotor_diameter=97, turbine_power=5.0, hub_height=110, commissioning_year=2015, generator_type='gb_dfig', recycled_share_steel=0.43, electricity_mix_steel='Poland', lifetime=20, eol_scenario=1, cf=0.24, time_adjusted_cf=0.009)
 ```
 
 ### Calculation of Life Cycle Impact Assessment: lca_wind_turbine() 
