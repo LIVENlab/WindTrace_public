@@ -28,7 +28,21 @@ MATERIALS_EI391_ACTIVITY_CODES = {
     'Terbium': {'name': 'market for terbium oxide', 'code': 'c44447ec9b7a72217943165e42a6e56d'},
     'Boron': {'name': 'market for boron carbide', 'code': 'db1891062e32e3ef010d13d2619c7ba3'},
     'Concrete_foundations': {'name': 'market group for concrete, normal',
-                             'code': 'aa1ab624a71fdc35bdb2fabb8d02c8ec'}
+                             'code': 'aa1ab624a71fdc35bdb2fabb8d02c8ec'},
+    'hdpe': {'name': 'market for polyethylene, high density, granulate',
+             'code': '22db46f6ba1211c058e4da0ac386d3e7'},
+    'Gravel': {'name': 'market for gravel, round',
+               'code': '306679b4bd7a801c5d60a2ff37fb3734'},
+    'Cement': {'name': 'market for cement, Portland',
+               'code': '172190d48ccdc5f567138ddafc2277f7'},
+    'Lead': {'name': 'market for lead',
+             'code': 'fbb0f24cb8a09b37b43d853dea138347'},
+    'Paper': {'name': 'market for kraft paper',
+              'code': '779418b7af49b2fdd8b2d8082ccf6a22'},
+    'PP': {'name': 'market for polypropylene, granulate',
+           'code': '61863071bd168004eb9af9df563661b5'},
+    'Asphalt': {'name': 'market for bitumen seal',
+                'code': '4b7b620b2d0bdf7250fa199dee87bc07'}
 }
 
 EOL_S1_EI391_ACTIVITY_CODES = {
@@ -242,6 +256,6 @@ VESTAS_FILE = os.path.join(cwd, 'clean_data.xlsx')
 # variables to be set by the user
 PROJECT_NAME = 'repowering'
 SPOLD_FILES = r"C:\ecoinvent_data\3.9.1\cutoff\datasets"
-NEW_DB_NAME = 'turbine_examples'
+NEW_DB_NAME = 'new_db'
 
 
