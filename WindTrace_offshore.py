@@ -4,10 +4,17 @@ import bw2io as bi
 from typing import List, Literal
 import sys
 from stats_arrays import NormalUncertainty
+
+import consts
 from WindTrace_onshore import *
 from consts import *
 
 # TODO: write methods
+# TODO:
+#  1. create manufacturing of the offshore materials
+#  2. Add a basic model of transport, installation, and maintenance (Tsai et al or
+#  3. Add eol of the current materials
+#  4. Function to build fleets
 
 # create a bw25 project, import ecoinvent v.3.9.1 and create an empty database 'new_db'
 bd.projects.set_current('premise')
@@ -418,27 +425,6 @@ def submarine_cables(rotor_diameter: float, distance_to_shore: float, park_name:
         new_exc.save()
         new_act.save()
 
-        # add cable material processing activities
-        processing_materials_list = ['Aluminium_cables', 'Copper', 'hdpe', 'PP']
-        for material in processing_materials_list:
-            if material == 'Aluminium_cables':
-                # copper wire drawing
-                inp = cutoff391.get(code=MATERIAL_PROCESSING_EI391_ACTIVITY_CODES['Copper']['code'])
-                ex = new_act.new_exchange(input=inp, type='technosphere', amount=mat_cable_output['Aluminium'])
-                ex.save()
-                new_act.save()
-            elif material == 'hdpe' or material == 'PP':
-                # plastic extrusion
-                inp = cutoff391.get(code=MATERIAL_PROCESSING_EI391_ACTIVITY_CODES['PE']['code'])
-                ex = new_act.new_exchange(input=inp, type='technosphere', amount=mat_cable_output['Aluminium'])
-                ex.save()
-                new_act.save()
-            else:
-                inp = cutoff391.get(code=MATERIAL_PROCESSING_EI391_ACTIVITY_CODES[material]['code'])
-                ex = new_act.new_exchange(input=inp, type='technosphere', amount=mat_cable_output[material])
-                ex.save()
-                new_act.save()
-
         print('A submarine cables activity was created.')
         return new_act
 
@@ -580,21 +566,24 @@ def offshore_turbine_materials(
     eol_act = new_db.get(f'{park_name}_eol')
 
     # 2. create offshore foundations
-    foundations_act = materials_foundations_offshore(offshore_type=offshore_type, power=turbine_power, sea_depth=sea_depth,
-                                   park_name=park_name, commissioning_year=commissioning_year,
-                                   floating_platform=floating_platform,
-                                   recycled_share_steel=recycled_share_steel,
-                                   electricity_mix_steel=electricity_mix_steel)
+    foundations_act = materials_foundations_offshore(offshore_type=offshore_type, power=turbine_power,
+                                                     sea_depth=sea_depth,
+                                                     park_name=park_name, commissioning_year=commissioning_year,
+                                                     floating_platform=floating_platform,
+                                                     recycled_share_steel=recycled_share_steel,
+                                                     electricity_mix_steel=electricity_mix_steel)
     # 3. create offshore cables
-    cables_act = submarine_cables(rotor_diameter=rotor_diameter, distance_to_shore=distance_to_shore, park_name=park_name,
-                     commissioning_year=commissioning_year, recycled_share_steel=recycled_share_steel,
-                     electricity_mix_steel=electricity_mix_steel)
+    cables_act = submarine_cables(rotor_diameter=rotor_diameter, distance_to_shore=distance_to_shore,
+                                  park_name=park_name,
+                                  commissioning_year=commissioning_year, recycled_share_steel=recycled_share_steel,
+                                  electricity_mix_steel=electricity_mix_steel)
     # 4. create offshore substation
     substation_act = substation_platform(park_name=park_name, commissioning_year=commissioning_year,
-                        recycled_share_steel=recycled_share_steel, electricity_mix_steel=electricity_mix_steel)
+                                         recycled_share_steel=recycled_share_steel,
+                                         electricity_mix_steel=electricity_mix_steel)
     # 5. put together all materials in one activity
     offshore_materials_act = new_db.new_activity(name=f'{park_name}_offshore_materials', unit='unit',
-                                  code=f'{park_name}_offshore_materials')
+                                                 code=f'{park_name}_offshore_materials')
     offshore_materials_act['reference product'] = 'offshore turbine, materials'
     offshore_materials_act.save()
     new_ex = offshore_materials_act.new_exchange(input=offshore_materials_act.key, type='production', amount=1)
@@ -603,4 +592,105 @@ def offshore_turbine_materials(
         new_ex = offshore_materials_act.new_exchange(input=act, type='technosphere', amount=1)
         new_ex.save()
 
-    return offshore_materials_act, manufacturing_act, eol_act
+    return offshore_materials_act, manufacturing_act, eol_act, foundations_act, cables_act, substation_act
+
+
+def offshore_manufacturing(park_name: str, park_power: float, number_of_turbines: int, park_location: str,
+                           park_coordinates: tuple,
+                           manufacturer: Literal['Vestas', 'Siemens Gamesa', 'Nordex', 'Enercon', 'LM Wind'],
+                           rotor_diameter: float,
+                           turbine_power: float, hub_height: float, commissioning_year: int,
+                           offshore_type: List[Literal['monopile', 'gravity', 'tripod', 'floating']],
+                           sea_depth: float, distance_to_shore: float,
+                           floating_platform: List[Literal['semi_sub', 'spar_buoy_concrete', 'spar_buoy_iron',
+                           'spar_buoy_steel', 'tension_leg', 'barge']] = None,
+                           recycled_share_steel: float = None,
+                           lifetime: int = 20,
+                           electricity_mix_steel: Optional[Literal['Norway', 'Europe', 'Poland']] = None,
+                           generator_type: Literal['dd_eesg', 'dd_pmsg', 'gb_pmsg', 'gb_dfig'] = 'gb_dfig',
+                           new_db=bd.Database('new_db')):
+    """
+    It creates an activity for the manufacturing of substation, foundations and cabling, respectively,
+    and add its inputs using the activities in consts.MANUFACTURING. It later creates an activity for the manufacturing
+    of everything, where all the substation, cabling, foundation activities AND TOWER MANUFACTURING are added.
+    This activity is called {park_name}_offshore_manufacturing
+    """
+
+    (offshore_materials_act, manufacturing_act, eol_act,
+     foundations_act, cables_act, substation_act) = offshore_turbine_materials(
+        park_name=park_name, park_power=park_power, number_of_turbines=number_of_turbines, park_location=park_location,
+        park_coordinates=park_coordinates, manufacturer=manufacturer, rotor_diameter=rotor_diameter,
+        turbine_power=turbine_power, hub_height=hub_height, commissioning_year=commissioning_year,
+        offshore_type=offshore_type, sea_depth=sea_depth, floating_platform=floating_platform,
+        recycled_share_steel=recycled_share_steel, lifetime=lifetime,
+        electricity_mix_steel=electricity_mix_steel, generator_type=generator_type, new_db=new_db
+        )
+
+    # create foundations manufacturing
+    foundations_man_act = new_db.new_activity(name=f'{park_name}_foundations_manufacturing', unit='unit', location=park_location)
+    foundations_man_act['reference product'] = 'offshore turbine foundations, manufacturing'
+    foundations_man_act.save()
+    new_ex = foundations_man_act.new_exchange(input=foundations_man_act.key, type='production', amount=1)
+    new_ex.save()
+    ex_foundations = [e for e in foundations_act.technosphere()]
+    for e in ex_foundations:
+        # steel, concrete, iron, hdpe, gravel
+        if 'steel' in e.input['name'] or 'iron' in e.input['name']:
+            input_act = consts.MATERIAL_PROCESSING_EI391_ACTIVITY_CODES['Steel_tower_rolling']['code']
+            new_ex = foundations_man_act.new_exchange(input=input_act, type='technosphere', amount=e.amount)
+            new_ex.save()
+        elif 'hdpe' in e.input['name']:
+            input_act = consts.MATERIAL_PROCESSING_EI391_ACTIVITY_CODES['PVC']['code']
+            new_ex = foundations_man_act.new_exchange(input=input_act, type='technosphere', amount=e.amount)
+            new_ex.save()
+        else:
+            pass
+    # create manufacturing process for cabling
+    cabling_man_act = new_db.new_activity(name=f'{park_name}_cabling_manufacturing', unit='unit', location=park_location)
+    cabling_man_act['reference product'] = 'offshore turbine cabling, manufacturing'
+    cabling_man_act.save()
+    new_ex = cabling_man_act.new_exchange(input=cabling_man_act.key, type='production', amount=1)
+    new_ex.save()
+    ex_cables = [e for e in cables_act.technosphere()]
+    for e in ex_cables:
+        if 'steel' in e.input['name'] or 'iron' in e.input['name']:
+            input_act = consts.MATERIAL_PROCESSING_EI391_ACTIVITY_CODES['Steel_tower_rolling']['code']
+            new_ex = cabling_man_act.new_exchange(input=input_act, type='technosphere', amount=e.amount)
+            new_ex.save()
+        elif 'hdpe' in e.input['name'] or 'polypropylene':
+            input_act = consts.MATERIAL_PROCESSING_EI391_ACTIVITY_CODES['PVC']['code']
+            new_ex = cabling_man_act.new_exchange(input=input_act, type='technosphere', amount=e.amount)
+            new_ex.save()
+        elif 'copper' in e.input['name'] or 'aluminium' in e.input['name']:
+            input_act = consts.MATERIAL_PROCESSING_EI391_ACTIVITY_CODES['Copper']['code']
+            new_ex = cabling_man_act.new_exchange(input=input_act, type='technosphere', amount=e.amount)
+            new_ex.save()
+        else:
+            pass
+    # create substation manufacturing process
+    substation_man_act = new_db.new_activity(name=f'{park_name}_substation_manufacturing', unit='unit', location=park_location)
+    substation_man_act['reference product'] = 'offshore turbine substation, manufacturing'
+    substation_man_act.save()
+    new_ex = substation_man_act.new_exchange(input=substation_man_act.key, type='production', amount=1)
+    new_ex.save()
+    ex_substation = [e for e in substation_act.technosphere()]
+    for e in ex_substation:
+        # steel, iron, water
+        if 'steel' in e.input['name'] or 'iron' in e.input['name']:
+            input_act = consts.MATERIAL_PROCESSING_EI391_ACTIVITY_CODES['Steel_tower_rolling']['code']
+            new_ex = substation_man_act.new_exchange(input=input_act, type='technosphere', amount=e.amount)
+            new_ex.save()
+        else:
+            pass
+
+    # create manufacturing process
+    new_act = new_db.new_activity(name=f'{park_name}_offshore_manufacturing', unit='unit', location=park_location)
+    new_act['reference product'] = 'offshore turbine, manufacturing'
+    new_act.save()
+    new_ex = new_act.new_exchange(input=new_act.key, type='production', amount=1)
+    new_ex.save()
+    for act in [substation_man_act, foundations_man_act, cabling_man_act, manufacturing_act]:
+        new_ex = new_act.new_exchange(input=act, type='technosphere', amount=1)
+        new_ex.save()
+
+    return new_act, eol_act
