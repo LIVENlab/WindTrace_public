@@ -11,10 +11,9 @@ from consts import *
 
 # TODO: write methods
 # TODO:
-#  1. create manufacturing of the offshore materials
-#  2. Add a basic model of transport, installation, and maintenance (Tsai et al or
-#  3. Add eol of the current materials
-#  4. Function to build fleets
+#  1. Add a basic model of transport, installation, and maintenance (Tsai et al or
+#  2. Add eol of the current materials
+#  3. Function to build fleets
 
 # create a bw25 project, import ecoinvent v.3.9.1 and create an empty database 'new_db'
 bd.projects.set_current('premise')
