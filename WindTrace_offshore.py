@@ -10,7 +10,7 @@ from WindTrace_onshore import *
 
 # TODO: write methods
 # TODO:
-#  1. Add a basic model of transport, installation, and maintenance (Tsai et al or
+#  1. Add a basic model of transport, installation, and maintenance (Tsai et al or others)
 #  2. Add eol of the current materials
 #  3. Function to build fleets
 
@@ -691,3 +691,121 @@ def offshore_manufacturing(park_name: str, park_power: float, number_of_turbines
         new_ex.save()
 
     return new_act, eol_act
+
+
+def transport_offshore(lifetime: int, park_name: str, distance_to_shore: float,
+                       offshore_type: List[Literal['monopile', 'gravity', 'tripod', 'floating']], location: str):
+    """
+    It creates a transport activity. Transportation from shore to installation point by vessel.
+    PROXY: Calculated rescaling from García-Teruel et al., 2022.
+    """
+    # create transport activity
+    transport_act = new_db.new_activity(name=f'{park_name}_transport', code=f'{park_name}_transport',
+                                        unit='unit', location=location)
+    transport_act['reference product'] = 'offshore turbine, transport'
+    transport_act.save()
+    new_ex = transport_act.new_exchange(input=transport_act.key, type='production', amount=1)
+    new_ex.save()
+    # add exchanges
+    foundation_act = new_db.get(f'{park_name}_{offshore_type}')
+    ex = [e for e in foundation_act.technosphere()]
+    amount_list = []
+    for e in ex:
+        if e.input._data['unit'] == 'cubic meters':
+            amount_list.append(e.input._data['amount'] * 2400)
+        else:
+            amount_list.append(e.input._data['amount'])
+    substation_act = new_db.get(f'{park_name}_floating_substation')
+    ex = [e for e in substation_act.technosphere()]
+    for e in ex:
+        if e.input._data['unit'] == 'cubic meters':
+            amount_list.append(e.input._data['amount'] * 2400)
+        else:
+            amount_list.append(e.input._data['amount'])
+    turbine_act = new_db.get(f'{park_name}_materials')
+    ex = [e for e in turbine_act.technosphere()]
+    for e in ex:
+        if e.input._data['unit'] == 'cubic meters':
+            amount_list.append(e.input._data['amount'] * 2400)
+        else:
+            amount_list.append(e.input._data['amount'])
+    mass_turbine_substation_and_foundations = sum(amount_list)
+    # based on García-Teruel, 2022.
+    ferry_act = cutoff391.get('150cb5f77b0346f4f65ba8ec9c178aff')
+    # amount reported in Garcia-Teruel / (mass * LT * distance_to_shore) * our_mass * our_LT * our_distance_to_shore
+    amount = 7842117.12 / (4215 * 25 * 25) * mass_turbine_substation_and_foundations * lifetime * distance_to_shore
+    new_ex = transport_act.new_exchange(input=ferry_act, type='technosphere', amount=amount)
+    new_ex.save()
+
+
+def installation_offshore(park_name: str, location: str, power: float, lifetime: int,
+                          offshore_type: List[Literal['monopile', 'gravity', 'tripod', 'floating']]):
+    """
+    It includes transformation and occupation flows (intensity calculated from Tsai et al. 2016).
+    NOTE: we assume a linear relation between area of the foundations and power, which is a huge limitation.
+    A LOT OF ROOM FOR IMPROVEMENT.
+    For floating we consider no seabed use.
+    It also includes operation with vessels.
+    PROXY: Operation calculated rescaling from García-Teruel et al., 2022.
+
+    """
+    # create transport activity
+    installation_act = new_db.new_activity(name=f'{park_name}_transport', code=f'{park_name}_transport',
+                                        unit='unit', location=location)
+    installation_act['reference product'] = 'offshore turbine, transport'
+    installation_act.save()
+    new_ex = installation_act.new_exchange(input=installation_act.key, type='production', amount=1)
+    new_ex.save()
+
+    # add biosphere
+    occupation_act = biosphere3.get('9db06277-b6d9-4c48-8cfb-de342e928a50')  # Occupation, seabed, infrastructure
+    transformation_from_act = biosphere3.get('928ba839-d6e5-4d1e-b5fd-122998a9bbe2')  # Transformation, from seabed, unspecified
+    transformation_to_act = biosphere3.get('c7d2cf2d-0d21-45f7-9769-b07f3e53b76a')  # Transformation, to seabed, infrastructure
+
+    intensity = {'monopile': 291.34 / 3, 'gravity': 1194.59 / 3, 'tripod': 763.41 / 3, 'floating': 0}  # m2/MW
+    new_ex = installation_act.new_exchange(
+        input=transformation_from_act, type='biosphere', amount=intensity[offshore_type] * power
+    )
+    new_ex.save()
+    new_ex = installation_act.new_exchange(
+        input=transformation_to_act, type='biosphere', amount=intensity[offshore_type] * power
+    )
+    new_ex.save()
+    new_ex = installation_act.new_exchange(
+        input=occupation_act, type='biosphere', amount=intensity[offshore_type] * power * lifetime
+    )
+    new_ex.save()
+
+    # add technosphere
+    foundation_act = new_db.get(f'{park_name}_{offshore_type}')
+    ex = [e for e in foundation_act.technosphere()]
+    amount_list = []
+    for e in ex:
+        if e.input._data['unit'] == 'cubic meters':
+            amount_list.append(e.input._data['amount'] * 2400)
+        else:
+            amount_list.append(e.input._data['amount'])
+    substation_act = new_db.get(f'{park_name}_floating_substation')
+    ex = [e for e in substation_act.technosphere()]
+    for e in ex:
+        if e.input._data['unit'] == 'cubic meters':
+            amount_list.append(e.input._data['amount'] * 2400)
+        else:
+            amount_list.append(e.input._data['amount'])
+    turbine_act = new_db.get(f'{park_name}_materials')
+    ex = [e for e in turbine_act.technosphere()]
+    for e in ex:
+        if e.input._data['unit'] == 'cubic meters':
+            amount_list.append(e.input._data['amount'] * 2400)
+        else:
+            amount_list.append(e.input._data['amount'])
+    mass_turbine_substation_and_foundations = sum(amount_list)
+    # based on García-Teruel, 2022.
+    ferry_act = cutoff391.get('150cb5f77b0346f4f65ba8ec9c178aff')
+    # amount reported in Garcia-Teruel / (mass * LT) * our_mass * our_LT. Distance to shore does not play an important role this time, since most operations happen on the installation site.
+    amount = 58696743.55 / (4215 * 25) * mass_turbine_substation_and_foundations * lifetime
+    new_ex = installation_act.new_exchange(input=ferry_act, type='technosphere', amount=amount)
+    new_ex.save()
+
+
+
