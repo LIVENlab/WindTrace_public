@@ -7,7 +7,6 @@ from stats_arrays import NormalUncertainty
 
 import consts
 from WindTrace_onshore import *
-from consts import *
 
 # TODO: write methods
 # TODO:
@@ -16,18 +15,18 @@ from consts import *
 #  3. Function to build fleets
 
 # create a bw25 project, import ecoinvent v.3.9.1 and create an empty database 'new_db'
-bd.projects.set_current('premise')
+bd.projects.set_current('offshore')
 bi.bw2setup()
-spold_files = SPOLD_FILES
+spold_files = consts.SPOLD_FILES
 if "cutoff391" not in bd.databases:
     ei = bi.SingleOutputEcospold2Importer(spold_files, "cutoff391", use_mp=False)
     ei.apply_strategies()
     ei.write_database()
 cutoff391 = bd.Database("cutoff391")
-if NEW_DB_NAME not in bd.databases:
-    new_db = bd.Database(NEW_DB_NAME)
+if consts.NEW_DB_NAME not in bd.databases:
+    new_db = bd.Database(consts.NEW_DB_NAME)
     new_db.register()
-new_db = bd.Database(NEW_DB_NAME)
+new_db = bd.Database(consts.NEW_DB_NAME)
 biosphere3 = bd.Database('biosphere3')
 
 
@@ -99,22 +98,22 @@ def monopile_parameters(sea_depth: float, power: float, park_name: str, commissi
                                                       electricity_mix=electricity_mix_steel)
                 ex = new_act.new_exchange(input=inp, type='technosphere', amount=mass, unit="kilogram")
                 ex.save()
-                new_act.save()
+
             elif material == 'Concrete_foundations':
-                material_act = cutoff391.get(code=MATERIALS_EI391_ACTIVITY_CODES[material]['code'])
+                material_act = cutoff391.get(code=consts.MATERIALS_EI391_ACTIVITY_CODES[material]['code'])
                 new_exc = new_act.new_exchange(input=material_act, amount=mass / 2400, unit="cubic meter",
                                                type='technosphere')
                 new_exc.save()
-                new_act.save()
+
             else:
-                material_act = cutoff391.get(code=MATERIALS_EI391_ACTIVITY_CODES[material]['code'])
+                material_act = cutoff391.get(code=consts.MATERIALS_EI391_ACTIVITY_CODES[material]['code'])
                 new_exc = new_act.new_exchange(input=material_act, amount=mass, unit="kilogram",
                                                type='technosphere')
                 new_exc.save()
-                new_act.save()
+
         new_exc = new_act.new_exchange(input=new_act.key, amount=1.0, unit="unit", type='production')
         new_exc.save()
-        new_act.save()
+
 
         print('A monopile foundation activity was created.')
         return new_act
@@ -167,22 +166,22 @@ def gravity_parameters(sea_depth: float, power: float, park_name: str, commissio
                                                       electricity_mix=electricity_mix_steel)
                 ex = new_act.new_exchange(input=inp, type='technosphere', amount=mass, unit="kilogram")
                 ex.save()
-                new_act.save()
+
             elif material == 'Concrete_foundations':
-                material_act = cutoff391.get(code=MATERIALS_EI391_ACTIVITY_CODES[material]['code'])
+                material_act = cutoff391.get(code=consts.MATERIALS_EI391_ACTIVITY_CODES[material]['code'])
                 new_exc = new_act.new_exchange(input=material_act, amount=mass / 2400, unit="cubic meter",
                                                type='technosphere')
                 new_exc.save()
-                new_act.save()
+
             else:
-                material_act = cutoff391.get(code=MATERIALS_EI391_ACTIVITY_CODES[material]['code'])
+                material_act = cutoff391.get(code=consts.MATERIALS_EI391_ACTIVITY_CODES[material]['code'])
                 new_exc = new_act.new_exchange(input=material_act, amount=mass, unit="kilogram",
                                                type='technosphere')
                 new_exc.save()
-                new_act.save()
+
         new_exc = new_act.new_exchange(input=new_act.key, amount=1.0, unit="unit", type='production')
         new_exc.save()
-        new_act.save()
+
 
         print('A gravity-based foundation activity was created.')
         return new_act
@@ -234,16 +233,14 @@ def tripod_parameters(sea_depth: float, power: float, park_name: str, commission
                                                       electricity_mix=electricity_mix_steel)
                 ex = new_act.new_exchange(input=inp, type='technosphere', amount=mass, unit="kilogram")
                 ex.save()
-                new_act.save()
             else:
-                material_act = cutoff391.get(code=MATERIALS_EI391_ACTIVITY_CODES[material]['code'])
+                material_act = cutoff391.get(code=consts.MATERIALS_EI391_ACTIVITY_CODES[material]['code'])
                 new_exc = new_act.new_exchange(input=material_act, amount=mass / 2400, unit="cubic meter",
                                                type='technosphere')
                 new_exc.save()
                 new_act.save()
         new_exc = new_act.new_exchange(input=new_act.key, amount=1.0, unit="unit", type='production')
         new_exc.save()
-        new_act.save()
 
         print('A tripod foundation activity was created.')
         return new_act
@@ -316,9 +313,8 @@ def floating_parameters(power: float, platform_type: List[Literal['semi_sub', 's
                 ex['scale'] = data['std'] * power
                 ex['minimum'] = 0
                 ex.save()
-                new_act.save()
             elif material == 'Concrete_foundations':
-                material_act = cutoff391.get(code=MATERIALS_EI391_ACTIVITY_CODES[material]['code'])
+                material_act = cutoff391.get(code=consts.MATERIALS_EI391_ACTIVITY_CODES[material]['code'])
                 new_exc = new_act.new_exchange(input=material_act, amount=data['mass'] * power / 2400, unit="kilogram",
                                                type='technosphere')
                 # Uncertainty added as the standard deviation of the residuals
@@ -327,9 +323,8 @@ def floating_parameters(power: float, platform_type: List[Literal['semi_sub', 's
                 new_exc['scale'] = data['std'] * power
                 new_exc['minimum'] = 0
                 new_exc.save()
-                new_act.save()
             else:
-                material_act = cutoff391.get(code=MATERIALS_EI391_ACTIVITY_CODES[material]['code'])
+                material_act = cutoff391.get(code=consts.MATERIALS_EI391_ACTIVITY_CODES[material]['code'])
                 new_exc = new_act.new_exchange(input=material_act, amount=data['mass'] * power, unit="kilogram",
                                                type='technosphere')
                 # Uncertainty added as the standard deviation of the residuals
@@ -341,7 +336,6 @@ def floating_parameters(power: float, platform_type: List[Literal['semi_sub', 's
                 new_act.save()
         new_exc = new_act.new_exchange(input=new_act.key, amount=1.0, unit="unit", type='production')
         new_exc.save()
-        new_act.save()
 
         print(f'A floating platform activity was created of the type {str(platform_type)}')
         return new_act
@@ -413,16 +407,13 @@ def submarine_cables(rotor_diameter: float, distance_to_shore: float, park_name:
                                                       electricity_mix=electricity_mix_steel)
                 ex = new_act.new_exchange(input=inp, type='technosphere', amount=mass, unit="kilogram")
                 ex.save()
-                new_act.save()
             else:
-                material_act = cutoff391.get(code=MATERIALS_EI391_ACTIVITY_CODES[material]['code'])
+                material_act = cutoff391.get(code=consts.MATERIALS_EI391_ACTIVITY_CODES[material]['code'])
                 new_exc = new_act.new_exchange(input=material_act, amount=mass, unit="kilogram",
                                                type='technosphere')
                 new_exc.save()
-                new_act.save()
         new_exc = new_act.new_exchange(input=new_act.key, amount=1.0, unit="unit", type='production')
         new_exc.save()
-        new_act.save()
 
         print('A submarine cables activity was created.')
         return new_act
@@ -447,18 +438,21 @@ def substation_platform(park_name: str, commissioning_year: int,
         new_act['reference product'] = 'offshore turbine, substation'
         new_act.save()
 
-        # iron
-        iron = cutoff391.get(code='b3d48f2f5446c645c128b06b5de93f21')  # cast iron
-        new_exc = new_act.new_exchange(input=iron.key, amount=ballast_fixed, unit="kilogram", type='technosphere')
+        # output
+        new_exc = new_act.new_exchange(input=new_act.key, amount=1.0, unit="unit", type='production')
         new_exc.save()
-        new_act.save()
+
+        # iron
+        iron = cutoff391.get(code='e0ad78b195d3be413c9b5792339382b9')  # iron ore concentrate
+        new_exc = new_act.new_exchange(input=iron, amount=ballast_fixed, unit="kilogram", type='technosphere')
+        new_exc.save()
+
 
         # water
         water = biosphere3.get('478e8437-1c21-4032-8438-872a6b5ddcdf')  # water
-        new_exc = new_act.new_exchange(input=water.key, amount=ballast_fluid / 1000, unit="cubic meter",
+        new_exc = new_act.new_exchange(input=water, amount=ballast_fluid / 1000, unit="cubic meter",
                                        type='biosphere')
         new_exc.save()
-        new_act.save()
 
         # steel
         inp, ch = manipulate_steel_activities(commissioning_year=commissioning_year,
@@ -466,12 +460,6 @@ def substation_platform(park_name: str, commissioning_year: int,
                                               electricity_mix=electricity_mix_steel)
         ex = new_act.new_exchange(input=inp, type='technosphere', amount=semi_submersible_plat, unit="kilogram")
         ex.save()
-        new_act.save()
-
-        # output
-        new_exc = new_act.new_exchange(input=new_act.key, amount=1.0, unit="unit", type='production')
-        new_exc.save()
-        new_act.save()
 
         print('A substation platform for the transformer was created.')
         return new_act
@@ -553,6 +541,8 @@ def offshore_turbine_materials(
     for e in deletable_ex:
         e.delete()
     manufacturing_act = new_db.get(f'{park_name}_manufacturing')
+    manufacturing_act['reference product'] = 'offshore turbine, manufacturing'
+    manufacturing_act.save()
     deletable_ex = [e for e in manufacturing_act.technosphere()][6:8]
     for e in deletable_ex:
         e.delete()
@@ -622,11 +612,13 @@ def offshore_manufacturing(park_name: str, park_power: float, number_of_turbines
         turbine_power=turbine_power, hub_height=hub_height, commissioning_year=commissioning_year,
         offshore_type=offshore_type, sea_depth=sea_depth, floating_platform=floating_platform,
         recycled_share_steel=recycled_share_steel, lifetime=lifetime,
-        electricity_mix_steel=electricity_mix_steel, generator_type=generator_type, new_db=new_db
-        )
+        electricity_mix_steel=electricity_mix_steel, generator_type=generator_type, new_db=new_db,
+        distance_to_shore=distance_to_shore)
 
     # create foundations manufacturing
-    foundations_man_act = new_db.new_activity(name=f'{park_name}_foundations_manufacturing', unit='unit', location=park_location)
+    foundations_man_act = new_db.new_activity(
+        name=f'{park_name}_foundations_manufacturing', code=f'{park_name}_foundations_manufacturing',
+        unit='unit', location=park_location)
     foundations_man_act['reference product'] = 'offshore turbine foundations, manufacturing'
     foundations_man_act.save()
     new_ex = foundations_man_act.new_exchange(input=foundations_man_act.key, type='production', amount=1)
@@ -635,17 +627,19 @@ def offshore_manufacturing(park_name: str, park_power: float, number_of_turbines
     for e in ex_foundations:
         # steel, concrete, iron, hdpe, gravel
         if 'steel' in e.input['name'] or 'iron' in e.input['name']:
-            input_act = consts.MATERIAL_PROCESSING_EI391_ACTIVITY_CODES['Steel_tower_rolling']['code']
-            new_ex = foundations_man_act.new_exchange(input=input_act, type='technosphere', amount=e.amount)
+            input_act = cutoff391.get(consts.MATERIAL_PROCESSING_EI391_ACTIVITY_CODES['Steel_tower_rolling']['code'])
+            new_ex = foundations_man_act.new_exchange(input=input_act, type='technosphere', amount=e['amount'])
             new_ex.save()
-        elif 'hdpe' in e.input['name']:
-            input_act = consts.MATERIAL_PROCESSING_EI391_ACTIVITY_CODES['PVC']['code']
-            new_ex = foundations_man_act.new_exchange(input=input_act, type='technosphere', amount=e.amount)
+        elif 'polyethylene' in e.input['name']:
+            input_act = cutoff391.get(consts.MATERIAL_PROCESSING_EI391_ACTIVITY_CODES['PVC']['code'])
+            new_ex = foundations_man_act.new_exchange(input=input_act, type='technosphere', amount=e['amount'])
             new_ex.save()
         else:
             pass
     # create manufacturing process for cabling
-    cabling_man_act = new_db.new_activity(name=f'{park_name}_cabling_manufacturing', unit='unit', location=park_location)
+    cabling_man_act = new_db.new_activity(
+        name=f'{park_name}_cabling_manufacturing', code=f'{park_name}_cabling_manufacturing',
+        unit='unit', location=park_location)
     cabling_man_act['reference product'] = 'offshore turbine cabling, manufacturing'
     cabling_man_act.save()
     new_ex = cabling_man_act.new_exchange(input=cabling_man_act.key, type='production', amount=1)
@@ -653,21 +647,23 @@ def offshore_manufacturing(park_name: str, park_power: float, number_of_turbines
     ex_cables = [e for e in cables_act.technosphere()]
     for e in ex_cables:
         if 'steel' in e.input['name'] or 'iron' in e.input['name']:
-            input_act = consts.MATERIAL_PROCESSING_EI391_ACTIVITY_CODES['Steel_tower_rolling']['code']
-            new_ex = cabling_man_act.new_exchange(input=input_act, type='technosphere', amount=e.amount)
+            input_act = cutoff391.get(consts.MATERIAL_PROCESSING_EI391_ACTIVITY_CODES['Steel_tower_rolling']['code'])
+            new_ex = cabling_man_act.new_exchange(input=input_act, type='technosphere', amount=e['amount'])
             new_ex.save()
-        elif 'hdpe' in e.input['name'] or 'polypropylene':
-            input_act = consts.MATERIAL_PROCESSING_EI391_ACTIVITY_CODES['PVC']['code']
-            new_ex = cabling_man_act.new_exchange(input=input_act, type='technosphere', amount=e.amount)
+        elif 'polyethylene' in e.input['name'] or 'polypropylene' in e.input['name']:
+            input_act = cutoff391.get(consts.MATERIAL_PROCESSING_EI391_ACTIVITY_CODES['PVC']['code'])
+            new_ex = cabling_man_act.new_exchange(input=input_act, type='technosphere', amount=e['amount'])
             new_ex.save()
         elif 'copper' in e.input['name'] or 'aluminium' in e.input['name']:
-            input_act = consts.MATERIAL_PROCESSING_EI391_ACTIVITY_CODES['Copper']['code']
-            new_ex = cabling_man_act.new_exchange(input=input_act, type='technosphere', amount=e.amount)
+            input_act = cutoff391.get(consts.MATERIAL_PROCESSING_EI391_ACTIVITY_CODES['Copper']['code'])
+            new_ex = cabling_man_act.new_exchange(input=input_act, type='technosphere', amount=e['amount'])
             new_ex.save()
         else:
             pass
     # create substation manufacturing process
-    substation_man_act = new_db.new_activity(name=f'{park_name}_substation_manufacturing', unit='unit', location=park_location)
+    substation_man_act = new_db.new_activity(
+        name=f'{park_name}_substation_manufacturing', code=f'{park_name}_substation_manufacturing',
+        unit='unit', location=park_location)
     substation_man_act['reference product'] = 'offshore turbine substation, manufacturing'
     substation_man_act.save()
     new_ex = substation_man_act.new_exchange(input=substation_man_act.key, type='production', amount=1)
@@ -676,15 +672,17 @@ def offshore_manufacturing(park_name: str, park_power: float, number_of_turbines
     for e in ex_substation:
         # steel, iron, water
         if 'steel' in e.input['name'] or 'iron' in e.input['name']:
-            input_act = consts.MATERIAL_PROCESSING_EI391_ACTIVITY_CODES['Steel_tower_rolling']['code']
-            new_ex = substation_man_act.new_exchange(input=input_act, type='technosphere', amount=e.amount)
+            input_act = cutoff391.get(consts.MATERIAL_PROCESSING_EI391_ACTIVITY_CODES['Steel_tower_rolling']['code'])
+            new_ex = substation_man_act.new_exchange(input=input_act, type='technosphere', amount=e['amount'])
             new_ex.save()
         else:
             pass
 
     # create manufacturing process
-    new_act = new_db.new_activity(name=f'{park_name}_offshore_manufacturing', unit='unit', location=park_location)
-    new_act['reference product'] = 'offshore turbine, manufacturing'
+    new_act = new_db.new_activity(
+        name=f'{park_name}_offshore_manufacturing', code=f'{park_name}_offshore_manufacturing',
+        unit='unit', location=park_location)
+    new_act['reference product'] = 'offshore turbine with foundations, cables and substation, manufacturing'
     new_act.save()
     new_ex = new_act.new_exchange(input=new_act.key, type='production', amount=1)
     new_ex.save()
