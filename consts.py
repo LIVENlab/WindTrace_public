@@ -254,8 +254,6 @@ cwd = os.getcwd()
 VESTAS_FILE = os.path.join(cwd, 'clean_data.xlsx')
 
 # variables to be set by the user
-PROJECT_NAME = 'repowering'
+PROJECT_NAME = 'offshore'
 SPOLD_FILES = r"C:\ecoinvent_data\3.9.1\cutoff\datasets"
 NEW_DB_NAME = 'new_db'
-
-
