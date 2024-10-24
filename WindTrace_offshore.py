@@ -114,7 +114,6 @@ def monopile_parameters(sea_depth: float, power: float, park_name: str, commissi
         new_exc = new_act.new_exchange(input=new_act.key, amount=1.0, unit="unit", type='production')
         new_exc.save()
 
-
         print('A monopile foundation activity was created.')
         return new_act
 
@@ -181,7 +180,6 @@ def gravity_parameters(sea_depth: float, power: float, park_name: str, commissio
 
         new_exc = new_act.new_exchange(input=new_act.key, amount=1.0, unit="unit", type='production')
         new_exc.save()
-
 
         print('A gravity-based foundation activity was created.')
         return new_act
@@ -447,7 +445,6 @@ def substation_platform(park_name: str, commissioning_year: int,
         new_exc = new_act.new_exchange(input=iron, amount=ballast_fixed, unit="kilogram", type='technosphere')
         new_exc.save()
 
-
         # water
         water = biosphere3.get('478e8437-1c21-4032-8438-872a6b5ddcdf')  # water
         new_exc = new_act.new_exchange(input=water, amount=ballast_fluid / 1000, unit="cubic meter",
@@ -552,7 +549,6 @@ def offshore_turbine_materials(
     installation_act.delete()
     om_act = new_db.get(f'{park_name}_maintenance')
     om_act.delete()
-    eol_act = new_db.get(f'{park_name}_eol')
 
     # 2. create offshore foundations
     foundations_act = materials_foundations_offshore(offshore_type=offshore_type, power=turbine_power,
@@ -581,7 +577,7 @@ def offshore_turbine_materials(
         new_ex = offshore_materials_act.new_exchange(input=act, type='technosphere', amount=1)
         new_ex.save()
 
-    return offshore_materials_act, manufacturing_act, eol_act, foundations_act, cables_act, substation_act
+    return offshore_materials_act, manufacturing_act, foundations_act, cables_act, substation_act
 
 
 def offshore_manufacturing(park_name: str, park_power: float, number_of_turbines: int, park_location: str,
@@ -605,7 +601,7 @@ def offshore_manufacturing(park_name: str, park_power: float, number_of_turbines
     This activity is called {park_name}_offshore_manufacturing
     """
 
-    (offshore_materials_act, manufacturing_act, eol_act,
+    (offshore_materials_act, manufacturing_act,
      foundations_act, cables_act, substation_act) = offshore_turbine_materials(
         park_name=park_name, park_power=park_power, number_of_turbines=number_of_turbines, park_location=park_location,
         park_coordinates=park_coordinates, manufacturer=manufacturer, rotor_diameter=rotor_diameter,
@@ -690,46 +686,28 @@ def offshore_manufacturing(park_name: str, park_power: float, number_of_turbines
         new_ex = new_act.new_exchange(input=act, type='technosphere', amount=1)
         new_ex.save()
 
-    return new_act, eol_act
+    return new_act
 
 
-def transport_offshore(lifetime: int, park_name: str, distance_to_shore: float,
-                       offshore_type: List[Literal['monopile', 'gravity', 'tripod', 'floating']], location: str):
+def transport_offshore(lifetime: int, park_name: str, distance_to_shore: float, location: str,
+                       offshore_type: List[Literal['monopile', 'gravity', 'tripod', 'floating']],
+                       floating_platform: List[Literal['semi_sub', 'spar_buoy_concrete', 'spar_buoy_iron',
+                       'spar_buoy_steel', 'tension_leg', 'barge']] = None,
+                       ):
     """
     It creates a transport activity. Transportation from shore to installation point by vessel.
     PROXY: Calculated rescaling from García-Teruel et al., 2022.
     """
     # create transport activity
-    transport_act = new_db.new_activity(name=f'{park_name}_transport', code=f'{park_name}_transport',
+    transport_act = new_db.new_activity(name=f'{park_name}_offshore_transport', code=f'{park_name}_offshore_transport',
                                         unit='unit', location=location)
     transport_act['reference product'] = 'offshore turbine, transport'
     transport_act.save()
     new_ex = transport_act.new_exchange(input=transport_act.key, type='production', amount=1)
     new_ex.save()
     # add exchanges
-    foundation_act = new_db.get(f'{park_name}_{offshore_type}')
-    ex = [e for e in foundation_act.technosphere()]
-    amount_list = []
-    for e in ex:
-        if e.input._data['unit'] == 'cubic meters':
-            amount_list.append(e.input._data['amount'] * 2400)
-        else:
-            amount_list.append(e.input._data['amount'])
-    substation_act = new_db.get(f'{park_name}_floating_substation')
-    ex = [e for e in substation_act.technosphere()]
-    for e in ex:
-        if e.input._data['unit'] == 'cubic meters':
-            amount_list.append(e.input._data['amount'] * 2400)
-        else:
-            amount_list.append(e.input._data['amount'])
-    turbine_act = new_db.get(f'{park_name}_materials')
-    ex = [e for e in turbine_act.technosphere()]
-    for e in ex:
-        if e.input._data['unit'] == 'cubic meters':
-            amount_list.append(e.input._data['amount'] * 2400)
-        else:
-            amount_list.append(e.input._data['amount'])
-    mass_turbine_substation_and_foundations = sum(amount_list)
+    mass_turbine_substation_and_foundations = get_mass_turbine(park_name=park_name, offshore_type=offshore_type,
+                                                               floating_platform=floating_platform)
     # based on García-Teruel, 2022.
     ferry_act = cutoff391.get('150cb5f77b0346f4f65ba8ec9c178aff')
     # amount reported in Garcia-Teruel / (mass * LT * distance_to_shore) * our_mass * our_LT * our_distance_to_shore
@@ -737,9 +715,14 @@ def transport_offshore(lifetime: int, park_name: str, distance_to_shore: float,
     new_ex = transport_act.new_exchange(input=ferry_act, type='technosphere', amount=amount)
     new_ex.save()
 
+    return transport_act
+
 
 def installation_offshore(park_name: str, location: str, power: float, lifetime: int,
-                          offshore_type: List[Literal['monopile', 'gravity', 'tripod', 'floating']]):
+                          offshore_type: List[Literal['monopile', 'gravity', 'tripod', 'floating']],
+                          floating_platform: List[Literal['semi_sub', 'spar_buoy_concrete', 'spar_buoy_iron',
+                          'spar_buoy_steel', 'tension_leg', 'barge']] = None
+                          ):
     """
     It includes transformation and occupation flows (intensity calculated from Tsai et al. 2016).
     NOTE: we assume a linear relation between area of the foundations and power, which is a huge limitation.
@@ -750,8 +733,9 @@ def installation_offshore(park_name: str, location: str, power: float, lifetime:
 
     """
     # create transport activity
-    installation_act = new_db.new_activity(name=f'{park_name}_transport', code=f'{park_name}_transport',
-                                        unit='unit', location=location)
+    installation_act = new_db.new_activity(name=f'{park_name}_offshore_installation',
+                                           code=f'{park_name}_offshore_installation',
+                                           unit='unit', location=location)
     installation_act['reference product'] = 'offshore turbine, transport'
     installation_act.save()
     new_ex = installation_act.new_exchange(input=installation_act.key, type='production', amount=1)
@@ -759,8 +743,10 @@ def installation_offshore(park_name: str, location: str, power: float, lifetime:
 
     # add biosphere
     occupation_act = biosphere3.get('9db06277-b6d9-4c48-8cfb-de342e928a50')  # Occupation, seabed, infrastructure
-    transformation_from_act = biosphere3.get('928ba839-d6e5-4d1e-b5fd-122998a9bbe2')  # Transformation, from seabed, unspecified
-    transformation_to_act = biosphere3.get('c7d2cf2d-0d21-45f7-9769-b07f3e53b76a')  # Transformation, to seabed, infrastructure
+    transformation_from_act = biosphere3.get(
+        '928ba839-d6e5-4d1e-b5fd-122998a9bbe2')  # Transformation, from seabed, unspecified
+    transformation_to_act = biosphere3.get(
+        'c7d2cf2d-0d21-45f7-9769-b07f3e53b76a')  # Transformation, to seabed, infrastructure
 
     intensity = {'monopile': 291.34 / 3, 'gravity': 1194.59 / 3, 'tripod': 763.41 / 3, 'floating': 0}  # m2/MW
     new_ex = installation_act.new_exchange(
@@ -777,29 +763,8 @@ def installation_offshore(park_name: str, location: str, power: float, lifetime:
     new_ex.save()
 
     # add technosphere
-    foundation_act = new_db.get(f'{park_name}_{offshore_type}')
-    ex = [e for e in foundation_act.technosphere()]
-    amount_list = []
-    for e in ex:
-        if e.input._data['unit'] == 'cubic meters':
-            amount_list.append(e.input._data['amount'] * 2400)
-        else:
-            amount_list.append(e.input._data['amount'])
-    substation_act = new_db.get(f'{park_name}_floating_substation')
-    ex = [e for e in substation_act.technosphere()]
-    for e in ex:
-        if e.input._data['unit'] == 'cubic meters':
-            amount_list.append(e.input._data['amount'] * 2400)
-        else:
-            amount_list.append(e.input._data['amount'])
-    turbine_act = new_db.get(f'{park_name}_materials')
-    ex = [e for e in turbine_act.technosphere()]
-    for e in ex:
-        if e.input._data['unit'] == 'cubic meters':
-            amount_list.append(e.input._data['amount'] * 2400)
-        else:
-            amount_list.append(e.input._data['amount'])
-    mass_turbine_substation_and_foundations = sum(amount_list)
+    mass_turbine_substation_and_foundations = get_mass_turbine(park_name=park_name, offshore_type=offshore_type,
+                                                               floating_platform=floating_platform)
     # based on García-Teruel, 2022.
     ferry_act = cutoff391.get('150cb5f77b0346f4f65ba8ec9c178aff')
     # amount reported in Garcia-Teruel / (mass * LT) * our_mass * our_LT. Distance to shore does not play an important role this time, since most operations happen on the installation site.
@@ -807,5 +772,297 @@ def installation_offshore(park_name: str, location: str, power: float, lifetime:
     new_ex = installation_act.new_exchange(input=ferry_act, type='technosphere', amount=amount)
     new_ex.save()
 
+    return installation_act
 
 
+def maintenance_offshore(park_name: str, location: str, lifetime: int,
+                         offshore_type: List[Literal['monopile', 'gravity', 'tripod', 'floating']],
+                         floating_platform: List[Literal['semi_sub', 'spar_buoy_concrete', 'spar_buoy_iron',
+                         'spar_buoy_steel', 'tension_leg', 'barge']] = None
+                         ):
+    """
+    It creates a maintenance activity.
+    PROXY: Calculated rescaling from García-Teruel et al., 2022. We take from Garcia-Teruel the scenario that assumes
+    the maintenance operations will be offshore (no dragging to port) [it is likely that this way of operating is the
+    norm in the future due to less cost] with HLV vessels. It also includes transportation to port anc back to
+    installation point of broken parts. This includes throughout the lifetime: 4 generatios, 6 gearboxes,
+    18 changes of lubrication oil and 17 changes of power electronic components. However, the parts are assumed to be
+    repaired (not replaced).
+
+    """
+    # create maintenance activity
+    maintenance_act = new_db.new_activity(name=f'{park_name}_offshore_maintenance',
+                                          code=f'{park_name}_offshore_maintenance',
+                                          unit='unit', location=location)
+    maintenance_act['reference product'] = 'offshore turbine, maintenance'
+    maintenance_act.save()
+    new_ex = maintenance_act.new_exchange(input=maintenance_act.key, type='production', amount=1)
+    new_ex.save()
+
+    # add technosphere
+    mass_turbine_substation_and_foundations = get_mass_turbine(park_name=park_name, offshore_type=offshore_type,
+                                                               floating_platform=floating_platform)
+    # based on García-Teruel, 2022.
+    ferry_act = cutoff391.get('150cb5f77b0346f4f65ba8ec9c178aff')
+    # amount reported in Garcia-Teruel / (mass * LT) * our_mass * our_LT. Distance to shore does not play an important role this time, since most operations happen on the installation site.
+    amount = 61059273.48 / (4215 * 25) * mass_turbine_substation_and_foundations * lifetime
+    new_ex = maintenance_act.new_exchange(input=ferry_act, type='technosphere', amount=amount)
+    new_ex.save()
+
+    return maintenance_act
+
+
+def get_mass_turbine(park_name: str, offshore_type: List[Literal['monopile', 'gravity', 'tripod', 'floating']],
+                     floating_platform: List[Literal['semi_sub', 'spar_buoy_concrete', 'spar_buoy_iron',
+                     'spar_buoy_steel', 'tension_leg', 'barge']] = None
+                     ):
+    """
+    get the mass of the turbine + substation + foundations
+    """
+    if offshore_type != 'floating':
+        foundation_act = new_db.get(f'{park_name}_{offshore_type}')
+    else:
+        foundation_act = new_db.get(f'{park_name}_{floating_platform}_{offshore_type}_platform')
+    ex = [e for e in foundation_act.technosphere()]
+    amount_list = []
+    for e in ex:
+        if e.input._data['unit'] == 'cubic meters':
+            amount_list.append(e['amount'] * 2400)
+        else:
+            amount_list.append(e['amount'])
+    substation_act = new_db.get(f'{park_name}_floating_substation')
+    ex = [e for e in substation_act.technosphere()]
+    for e in ex:
+        if e.input._data['unit'] == 'cubic meters':
+            amount_list.append(e['amount'] * 2400)
+        else:
+            amount_list.append(e['amount'])
+    turbine_act = new_db.get(f'{park_name}_materials')
+    ex = [e for e in turbine_act.technosphere()]
+    for e in ex:
+        if e.input._data['unit'] == 'cubic meters':
+            amount_list.append(e['amount'] * 2400)
+        else:
+            amount_list.append(e['amount'])
+    mass_turbine_substation_and_foundations = sum(amount_list)
+    return mass_turbine_substation_and_foundations
+
+
+def offshore_eol(park_name: str, scenario: int,
+                 offshore_type: List[Literal['monopile', 'gravity', 'tripod', 'floating']],
+                 floating_platform: List[Literal['semi_sub', 'spar_buoy_concrete', 'spar_buoy_iron',
+                 'spar_buoy_steel', 'tension_leg', 'barge']] = None
+                 ):
+    """
+    It adds eol treatment of substation, cabling and foundations to the original eol activity of the turbine.
+    """
+    if 1 > scenario or scenario > 4:
+        print('There are 4 eol scenarios in WindTrace. You chose a number that is not in the range 1-4. '
+              'By default we applied the baseline scenario')
+        scenario = 1
+
+    # eol turbine original
+    eol_act = new_db.get(f'{park_name}_eol')
+    eol_act['name'] = f'{park_name}_offshore_eol'
+    # foundation and substation act
+    if offshore_type != 'floating':
+        foundation_act = new_db.get(f'{park_name}_{offshore_type}')
+    else:
+        foundation_act = new_db.get(f'{park_name}_{floating_platform}_{offshore_type}_platform')
+    substation_act = new_db.get(f'{park_name}_floating_substation')
+    cabling_act = new_db.get(f'{park_name}_cabling_offshore')
+    for e in foundation_act.technosphere():
+        # steel, cement, gravel
+        if 'steel' in e.input['name'] or 'iron' in e.input['name']:
+            if scenario == 1 or scenario == 2 or scenario == 4:
+                recycling_rate = 0.9
+            # scenario == 3
+            else:
+                recycling_rate = 0.52
+            inp = cutoff391.get(code=consts.EOL_S1_EI391_ACTIVITY_CODES['Low alloy steel']['landfill']['code'])
+            ex = eol_act.new_exchange(input=inp, type='technosphere',
+                                      amount=e['amount'] * (-(1 - recycling_rate)))
+            ex.save()
+        elif 'polyethylene' in e.input['name']:
+            input_act = cutoff391.get(consts.EOL_S1_EI391_ACTIVITY_CODES['PE']['landfill']['code'])
+            new_ex = eol_act.new_exchange(input=input_act, type='technosphere', amount=-e['amount'])
+            new_ex.save()
+        elif 'cement' in e.input['name'] or 'gravel' in e.input['name']:
+            if scenario == 4:
+                input_act = cutoff391.get(
+                    consts.EOL_S1_EI391_ACTIVITY_CODES['Concrete_foundations']['landfill']['code'])
+                new_ex = eol_act.new_exchange(input=input_act, type='technosphere', amount=e['amount'] * (-0.5))
+                new_ex.save()
+            else:
+                input_act = cutoff391.get(
+                    consts.EOL_S1_EI391_ACTIVITY_CODES['Concrete_foundations']['landfill']['code'])
+                new_ex = eol_act.new_exchange(input=input_act, type='technosphere', amount=-e['amount'])
+                new_ex.save()
+        elif 'concrete' in e.input['name']:
+            if scenario == 4:
+                input_act = cutoff391.get(
+                    consts.EOL_S1_EI391_ACTIVITY_CODES['Concrete_foundations']['landfill']['code'])
+                new_ex = eol_act.new_exchange(input=input_act, type='technosphere', amount=e['amount'] * (2400 * -0.5))
+                new_ex.save()
+            else:
+                input_act = cutoff391.get(
+                    consts.EOL_S1_EI391_ACTIVITY_CODES['Concrete_foundations']['landfill']['code'])
+                new_ex = eol_act.new_exchange(input=input_act, type='technosphere', amount=-e['amount'] * 2400)
+                new_ex.save()
+
+    for e in substation_act.technosphere():
+        # steel, iron
+        if 'steel' in e.input['name'] or 'iron' in e.input['name']:
+            if scenario == 1 or scenario == 2 or scenario == 4:
+                recycling_rate = 0.9
+            # scenario == 3
+            else:
+                recycling_rate = 0.52
+            inp = cutoff391.get(code=consts.EOL_S1_EI391_ACTIVITY_CODES['Low alloy steel']['landfill']['code'])
+            ex = eol_act.new_exchange(input=inp, type='technosphere',
+                                      amount=e['amount'] * (-(1 - recycling_rate)))
+            ex.save()
+
+    for e in cabling_act.technosphere():
+        if 'steel' in e.input['name'] or 'iron' in e.input['name']:
+            if scenario == 1 or scenario == 2 or scenario == 4:
+                recycling_rate = 0.9
+            # scenario == 3
+            else:
+                recycling_rate = 0.52
+            inp = cutoff391.get(code=consts.EOL_S1_EI391_ACTIVITY_CODES['Low alloy steel']['landfill']['code'])
+            ex = eol_act.new_exchange(input=inp, type='technosphere',
+                                      amount=e['amount'] * (-(1 - recycling_rate)))
+            ex.save()
+        elif 'aluminium' in e.input['name']:
+            if scenario == 1 or scenario == 4:
+                recycling_rate = 0.9
+            elif scenario == 2:
+                recycling_rate = 0.7
+            # secenario == 3
+            else:
+                recycling_rate = 0.42
+            inp = cutoff391.get(code=consts.EOL_S1_EI391_ACTIVITY_CODES['Aluminium']['landfill']['code'])
+            ex = eol_act.new_exchange(input=inp, type='technosphere',
+                                      amount=e['amount'] * (-(1 - recycling_rate)))
+            ex.save()
+        elif 'copper' in e.input['name']:
+            if scenario == 1 or scenario == 4:
+                recycling_rate = 0.9
+            elif scenario == 2:
+                recycling_rate = 0.53
+            # scenario == 3
+            else:
+                recycling_rate = 0.42
+            inp = cutoff391.get(code=consts.EOL_S1_EI391_ACTIVITY_CODES['Copper']['landfill']['code'])
+            ex = eol_act.new_exchange(input=inp, type='technosphere',
+                                      amount=e['amount'] * (-(1 - recycling_rate)))
+            ex.save()
+        elif 'polyethylene' in e.input['name'] or 'polypropylene' in e.input['name']:
+            input_act = cutoff391.get(consts.EOL_S1_EI391_ACTIVITY_CODES['PE']['landfill']['code'])
+            new_ex = eol_act.new_exchange(input=input_act, type='technosphere', amount=-e['amount'])
+            new_ex.save()
+        elif 'concrete' in e.input['name']:
+            if scenario == 4:
+                input_act = cutoff391.get(
+                    consts.EOL_S1_EI391_ACTIVITY_CODES['Concrete_foundations']['landfill']['code'])
+                new_ex = eol_act.new_exchange(input=input_act, type='technosphere', amount=e['amount'] * (2400 * -0.5))
+                new_ex.save()
+            else:
+                input_act = cutoff391.get(
+                    consts.EOL_S1_EI391_ACTIVITY_CODES['Concrete_foundations']['landfill']['code'])
+                new_ex = eol_act.new_exchange(input=input_act, type='technosphere', amount=-e['amount'] * 2400)
+                new_ex.save()
+        else:
+            if scenario == 4:
+                input_act = cutoff391.get(consts.EOL_S1_EI391_ACTIVITY_CODES['electronics']['landfill']['code'])
+                new_ex = eol_act.new_exchange(input=input_act, type='technosphere', amount=e['amount'] * (-0.5))
+                new_ex.save()
+            else:
+                input_act = cutoff391.get(
+                    consts.EOL_S1_EI391_ACTIVITY_CODES['electronics']['landfill']['code'])
+                new_ex = eol_act.new_exchange(input=input_act, type='technosphere', amount=-e['amount'])
+                new_ex.save()
+    return eol_act
+
+
+def lci_offshore_turbine(park_name: str, park_power: float, number_of_turbines: int, park_location: str,
+                         park_coordinates: tuple,
+                         manufacturer: Literal['Vestas', 'Siemens Gamesa', 'Nordex', 'Enercon', 'LM Wind'],
+                         rotor_diameter: float,
+                         turbine_power: float, hub_height: float, commissioning_year: int,
+                         offshore_type: List[Literal['monopile', 'gravity', 'tripod', 'floating']],
+                         sea_depth: float, distance_to_shore: float,
+                         floating_platform: List[Literal['semi_sub', 'spar_buoy_concrete', 'spar_buoy_iron',
+                         'spar_buoy_steel', 'tension_leg', 'barge']] = None,
+                         recycled_share_steel: float = None,
+                         scenario: int = 1,
+                         lifetime: int = 20,
+                         electricity_mix_steel: Optional[Literal['Norway', 'Europe', 'Poland']] = None,
+                         generator_type: Literal['dd_eesg', 'dd_pmsg', 'gb_pmsg', 'gb_dfig'] = 'gb_dfig',
+                         new_db=bd.Database('new_db')):
+    # create offshore turbine activity
+    offshore_turbine_act = new_db.new_activity(name=f'{park_name}_offshore_turbine',
+                                               code=f'{park_name}_offshore_turbine',
+                                               unit='unit', location=park_location)
+    offshore_turbine_act['reference product'] = 'offshore turbine'
+    offshore_turbine_act.save()
+    new_ex = offshore_turbine_act.new_exchange(input=offshore_turbine_act.key, type='production', amount=1)
+    new_ex.save()
+
+    manufacturing = offshore_manufacturing(
+        park_name=park_name, park_power=park_power,
+        number_of_turbines=number_of_turbines,
+        park_location=park_location,
+        park_coordinates=park_coordinates,
+        manufacturer=manufacturer, rotor_diameter=rotor_diameter,
+        turbine_power=turbine_power, hub_height=hub_height, commissioning_year=commissioning_year,
+        offshore_type=offshore_type,
+        sea_depth=sea_depth, distance_to_shore=distance_to_shore,
+        floating_platform=floating_platform, generator_type=generator_type,
+        recycled_share_steel=recycled_share_steel, lifetime=lifetime,
+        electricity_mix_steel=electricity_mix_steel, new_db=new_db
+    )
+    new_ex = offshore_turbine_act.new_exchange(input=manufacturing, type='technosphere', amount=1)
+    new_ex.save()
+    transport = transport_offshore(
+        park_name=park_name,
+        offshore_type=offshore_type,
+        distance_to_shore=distance_to_shore,
+        lifetime=lifetime, location=park_location, floating_platform=floating_platform
+    )
+    new_ex = offshore_turbine_act.new_exchange(input=transport, type='technosphere', amount=1)
+    new_ex.save()
+    installation = installation_offshore(
+        park_name=park_name, power=turbine_power,
+        offshore_type=offshore_type,
+        lifetime=lifetime, location=park_location, floating_platform=floating_platform
+    )
+    new_ex = offshore_turbine_act.new_exchange(input=installation, type='technosphere', amount=1)
+    new_ex.save()
+    maintenance = maintenance_offshore(
+        park_name=park_name,
+        offshore_type=offshore_type,
+        lifetime=lifetime, location=park_location, floating_platform=floating_platform
+    )
+    new_ex = offshore_turbine_act.new_exchange(input=maintenance, type='technosphere', amount=1)
+    new_ex.save()
+    eol = offshore_eol(
+        park_name=park_name,
+        offshore_type=offshore_type, floating_platform=floating_platform, scenario=scenario
+    )
+    new_ex = offshore_turbine_act.new_exchange(input=eol, type='technosphere', amount=1)
+    new_ex.save()
+
+    delete_unnecesary_acts(park_name=park_name, park_power=park_power)
+
+
+def delete_unnecesary_acts(park_name: str, park_power: float):
+    onshore_turbine = new_db.get(f'{park_name}_single_turbine')
+    onshore_turbine.delete()
+    onshore_cables = new_db.get(f'{park_name}_intra_cables')
+    onshore_cables.delete()
+    onshore_park = new_db.get(f'{park_name}_{park_power}')
+    onshore_park.delete()
+    onshore_transformer = new_db.get('TrafoStar_500')
+    onshore_transformer.delete()
