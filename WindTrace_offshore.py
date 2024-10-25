@@ -297,7 +297,7 @@ def floating_parameters(power: float, platform_type: List[Literal['semi_sub', 's
     floating_platform_name = f"{str(park_name)}_{str(platform_type)}_floating_platform"
     if not [act for act in new_db if floating_platform_name in act['name']]:
         new_act = new_db.new_activity(name=floating_platform_name, unit='unit', code=floating_platform_name)
-        new_act['reference product'] = f'offshore turbine foundations, floating, {floating_platform_name}'
+        new_act['reference product'] = f'offshore turbine foundations, floating, {" ".join(str(platform_type).split("_"))}'
         new_act.save()
 
         for material, data in structure_mass_intensity.items():
@@ -682,7 +682,7 @@ def offshore_manufacturing(park_name: str, park_power: float, number_of_turbines
     new_act.save()
     new_ex = new_act.new_exchange(input=new_act.key, type='production', amount=1)
     new_ex.save()
-    for act in [substation_man_act, foundations_man_act]:
+    for act in [offshore_materials_act, foundations_man_act]:
         new_ex = new_act.new_exchange(input=act, type='technosphere', amount=1)
         new_ex.save()
 
@@ -736,7 +736,7 @@ def installation_offshore(park_name: str, location: str, power: float, lifetime:
     installation_act = new_db.new_activity(name=f'{park_name}_offshore_installation',
                                            code=f'{park_name}_offshore_installation',
                                            unit='unit', location=location)
-    installation_act['reference product'] = 'offshore turbine, transport'
+    installation_act['reference product'] = 'offshore turbine, installation'
     installation_act.save()
     new_ex = installation_act.new_exchange(input=installation_act.key, type='production', amount=1)
     new_ex.save()
