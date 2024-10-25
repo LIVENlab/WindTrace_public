@@ -710,8 +710,8 @@ def transport_offshore(park_name: str, distance_to_shore: float, location: str,
                                                                floating_platform=floating_platform)
     # based on García-Teruel, 2022.
     ferry_act = cutoff391.get('150cb5f77b0346f4f65ba8ec9c178aff')
-    # amount reported in Garcia-Teruel / (mass * number of turbines * distance_to_shore) * our_mass * our_distance_to_shore
-    amount = 7842117.12 / (43575 * 25 * 5 * 25) * mass_turbine_substation_and_foundations / 1000 * distance_to_shore
+    # amount reported in Garcia-Teruel / (mass * distance_to_shore) * our_mass * our_distance_to_shore
+    amount = 7842117.12 / (43575 * 25 * 25) * mass_turbine_substation_and_foundations / 1000 * distance_to_shore
     new_ex = transport_act.new_exchange(input=ferry_act, type='technosphere', amount=amount)
     new_ex.save()
 
@@ -767,8 +767,8 @@ def installation_offshore(park_name: str, location: str, power: float, lifetime:
                                                                floating_platform=floating_platform)
     # based on García-Teruel, 2022.
     ferry_act = cutoff391.get('150cb5f77b0346f4f65ba8ec9c178aff')
-    # amount reported in Garcia-Teruel / (mass * number of turbines) * our_mass. Distance to shore does not play an important role this time, since most operations happen on the installation site.
-    amount = 58696743.55 / (43575 * 5) * mass_turbine_substation_and_foundations / 1000
+    # amount reported in Garcia-Teruel / (mass) * our_mass. Distance to shore does not play an important role this time, since most operations happen on the installation site.
+    amount = 58696743.55 / 43575 * mass_turbine_substation_and_foundations / 1000
     new_ex = installation_act.new_exchange(input=ferry_act, type='technosphere', amount=amount)
     new_ex.save()
 
@@ -1034,8 +1034,8 @@ def offshore_eol(park_name: str, scenario: int, location: str,
                                                                floating_platform=floating_platform)
     # based on García-Teruel, 2022.
     ferry_act = cutoff391.get('150cb5f77b0346f4f65ba8ec9c178aff')
-    # amount reported in Garcia-Teruel / (mass * number of turbines) * our_mass. Distance to shore does not play an important role this time, since most operations happen on the installation site.
-    amount = 58696743.55 / (4215 * 5) * mass_turbine_substation_and_foundations / 1000
+    # amount reported in Garcia-Teruel / (mass) * our_mass. Distance to shore does not play an important role this time, since most operations happen on the installation site.
+    amount = 58696743.55 / (43575) * mass_turbine_substation_and_foundations / 1000
     new_ex = eol_operations_act.new_exchange(input=ferry_act, type='technosphere', amount=amount)
     new_ex.save()
 
