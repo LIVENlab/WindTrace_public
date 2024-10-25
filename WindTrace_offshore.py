@@ -1055,6 +1055,9 @@ def offshore_eol(park_name: str, scenario: int, location: str,
     # add original eol
     new_ex = eol_offshore_act.new_exchange(input=eol_original_act, type='technosphere', amount=1)
     new_ex.save()
+    # add foundations eol
+    new_ex = eol_offshore_act.new_exchange(input=eol_foundation_act, type='technosphere', amount=1)
+    new_ex.save()
     # add operations
     new_ex = eol_offshore_act.new_exchange(input=eol_operations_act, type='technosphere', amount=1)
     new_ex.save()
