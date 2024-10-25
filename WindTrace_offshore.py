@@ -378,7 +378,7 @@ def submarine_cables(rotor_diameter: float, distance_to_shore: float, park_name:
     # substation to shore cabling
     subs_to_shore_mat_mass = {}
     for mat in hvdc.keys():
-        subs_to_shore_mat_mass[mat] = 7.7 * distance_to_shore * hvdc[mat]
+        subs_to_shore_mat_mass[mat] = distance_to_shore * hvdc[mat]
         mat_list.append(mat)
 
     # total material
