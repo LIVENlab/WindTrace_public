@@ -711,7 +711,7 @@ def transport_offshore(park_name: str, distance_to_shore: float, location: str,
     # based on García-Teruel, 2022.
     ferry_act = cutoff391.get('150cb5f77b0346f4f65ba8ec9c178aff')
     # amount reported in Garcia-Teruel / (mass * distance_to_shore) * our_mass * our_distance_to_shore
-    amount = 7842117.12 / (43575 * 25 * 25) * mass_turbine_substation_and_foundations / 1000 * distance_to_shore
+    amount = 7842117.12 / (43575 * 25) * mass_turbine_substation_and_foundations / 1000 * distance_to_shore
     new_ex = transport_act.new_exchange(input=ferry_act, type='technosphere', amount=amount)
     new_ex.save()
 
