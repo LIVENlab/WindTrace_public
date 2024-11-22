@@ -50,11 +50,12 @@ def monopile_parameters(sea_depth: float, power: float, park_name: str, commissi
                         electricity_mix_steel: List[Literal['Europe', 'Poland', 'Norway']] = None,
                         new_db=bd.Database('new_db')):
     """
-        All credits to Sacchi et al.
+        All credits to Sacchi et al. Penetration depth in the seabed was changed to make it more realistic. Now it is
+        3 m per MW, while before it was 19.7 m per MW.
     """
     #### NOTE: power in kW
     power = power * 1000
-    penetration_depth = 19.4002294 * power / 1000 + 0.000944015847  # penetration in the seabed
+    penetration_depth = 3 * power / 1000  # penetration in the seabed
     pile_length = 9 + penetration_depth + sea_depth  # 9m added to the
 
     # transition piece, grout and scour masses
