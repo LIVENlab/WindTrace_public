@@ -724,7 +724,7 @@ def lci_materials(park_name: str, park_power: float, number_of_turbines: int, pa
         print('"new_db". You may want to think about giving '
               'another name to the wind park you are trying to '
               'analyse. Otherwise, you may want to delete '
-              'the content of "new_db" by runing delete_new_db().')
+              'the content of "new_db" by running delete_new_db().')
         print(
             'WARNING: if you run delete_new_db() '
             'ALL WIND PARKS STORED IN THAT DATABASE WILL '

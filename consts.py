@@ -240,8 +240,8 @@ cwd = os.getcwd()
 VESTAS_FILE = os.path.join(cwd, 'clean_data.xlsx')
 
 # variables to be set by the user
-PROJECT_NAME = 'repowering'
-SPOLD_FILES = r"C:\ecoinvent_data\3.9.1\cutoff\datasets"
+PROJECT_NAME = 'Cabril_v3'
+SPOLD_FILES = r"C:\Users\1439891\OneDrive - UAB\Documentos\ecoinvent 3.9.1_cutoff_ecoSpold02\datasets"
 
 
 
