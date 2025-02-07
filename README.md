@@ -64,8 +64,8 @@ lci_wind_turbine(park_name='Garriguella_EMPoland', park_power=10.0, number_of_tu
 ### Calculation of Life Cycle Impact Assessment: lca_wind_turbine() 
 
 LCA impacts of a park or an individual turbine of the park can be calculated with **lca_wind_turbine()**. It returns two dictionaries: the first one being results per unit and the second one being results per kWh.
-Default results are given per turbine. For the whole park, you must set the parameter 'turbine' to False. 
-_ReCiPe 2016 v1.03, midpoint (H)_ is the default LCIA method. It can be manually changed by giving the parameter 'method' another name of a method in Brightway.
+Default results are given per turbine. For the whole park, you must set the parameter `'turbine'` to `False`. 
+_ReCiPe 2016 v1.03, midpoint (H)_ is the default LCIA method. It can be manually changed by giving the parameter `'method'` another name of a method in Brightway.
 
 Here an example of application for the whole park:
 
