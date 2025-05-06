@@ -12,7 +12,7 @@ import sys
 import consts
 
 # TODO: update documentation
-# TODO: do a few tests on the new material_mass function
+# TODO: do a few tests on the new material_mass functions
 
 # create a bw25 project, import ecoinvent v.3.9.1 and create an empty database 'new_db'
 bd.projects.set_current(consts.PROJECT_NAME)
