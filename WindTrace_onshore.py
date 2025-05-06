@@ -26,8 +26,7 @@ if consts.NEW_DB_NAME not in bd.databases:
 new_db = bd.Database(consts.NEW_DB_NAME)
 biosphere3 = bd.Database('biosphere3')
 
-
-def steel_turbine(plot_mat: bool = False):
+def steel_turbine(plot_mat: bool = False, regression_adjustment: Literal['D2h', 'Hub height'] = 'D2h'):
     """
     It returns a dictionary 'materials_polyfits' that contains the fitting curve of steel (mass vs hub height). The
     dictionary has the keys 'polyfit' and 'confidence_95%' where the values are stored. The uncertainty (to be added
@@ -36,9 +35,13 @@ def steel_turbine(plot_mat: bool = False):
     """
     vestas_data = pd.read_excel(consts.VESTAS_FILE, sheet_name="1_MATERIALS_TURBINE", dtype=None, decimal=";", header=0)
 
-    short_vestas_data = vestas_data[vestas_data['Hub height'] <= 84]
-    # Extracting columns
-    x = vestas_data['Hub height']
+    if regression_adjustment == 'Hub height':
+        short_vestas_data = vestas_data[vestas_data['Hub height'] <= 84]
+        # Extracting columns
+        x = vestas_data['Hub height']
+    else:
+        short_vestas_data = vestas_data[vestas_data['D2h'] <= 1053696]
+        x = vestas_data['D2h']
     y = vestas_data['Low alloy steel']
     # Remove NaN values
     valid_indices = ~np.isnan(x) & ~np.isnan(y)
@@ -62,7 +65,10 @@ def steel_turbine(plot_mat: bool = False):
     polyfit_and_confidence = {'polyfit': predict_steel, 'confidence_95%': confidence, 'std_dev': residual_std_dev}
     materials_polyfits['Low alloy steel'] = polyfit_and_confidence
     # Extract short data
-    short_x = short_vestas_data['Hub height']
+    if regression_adjustment == 'Hub height':
+        short_x = short_vestas_data['Hub height']
+    else:
+        short_x = short_vestas_data['D2h']
     short_y = short_vestas_data['Low alloy steel']
     slope, intercept = linear_regression(short_x, short_y, proportional=True)
     # slope, intercept = linear_regression(short_x, short_y)
@@ -92,13 +98,14 @@ def steel_turbine(plot_mat: bool = False):
     return vestas_data, materials_polyfits, materials_polyfits_short, intersection
 
 
-def other_turbine_materials(plot_mat=False) -> (tuple, dict, dict):
+def other_turbine_materials(plot_mat=False, regression_adjustment: Literal['D2h', 'Hub height'] = 'D2h') -> (tuple, dict, dict):
     """
     It returns a dictionary 'materials_polyfits' that contains the fitting curves of steel and turbine materials.
     The dictionary has the keys 'polyfit' and 'confidence_95%' where the values are stored.
     If plot_mat is set to True, all the materials fitting plots will be shown.
     """
-    vestas_data, materials_polyfits, materials_polyfits_short, intersection = steel_turbine()
+    (vestas_data, materials_polyfits,
+     materials_polyfits_short, intersection) = steel_turbine(regression_adjustment=regression_adjustment)
     columns = list(vestas_data)
     last_index = columns.index('Lubricating oil')
     initial_index = columns.index('Low alloy steel') + 1
@@ -175,13 +182,14 @@ def rare_earth(generator_type: Literal['dd_eesg', 'dd_pmsg', 'gb_pmsg', 'gb_dfig
     return rare_earth_int
 
 
-def foundations_mat(mat_file: str, plot_mat=False):
+def foundations_mat(mat_file: str, plot_mat=False, regression_adjustment: Literal['D2h', 'Hub height'] = 'D2h'):
     """
     It returns a dictionary 'materials_polyfits' that contains the fitting curves of all the materials (steel, turbine
     and foundations). The dictionary has the keys 'polyfit' and 'confidence_95%' where the values are stored.
     If plot_mat is set to True, all the materials fitting plots will be shown.
     """
-    materials_polyfits, mat_polyfits_short, intersection = other_turbine_materials()
+    (materials_polyfits, mat_polyfits_short,
+     intersection) = other_turbine_materials(regression_adjustment=regression_adjustment)
     vestas_data = pd.read_excel(mat_file, sheet_name="1_MATERIALS_FOUNDATIONS", dtype=None, decimal=";", header=0)
     columns = list(vestas_data)
     last_index = columns.index('Concrete')
@@ -246,23 +254,31 @@ def plot_materials(x, y, residuals, interpolation_eq, confidence, xlabel: str, y
 
 
 def materials_mass(generator_type: Literal['dd_eesg', 'dd_pmsg', 'gb_pmsg', 'gb_dfig'],
-                   turbine_power: float, hub_height: float):
+                   turbine_power: float, hub_height: float, rotor_diameter: float,
+                   regression_adjustment: Literal['D2h', 'Hub height'] = 'D2h'):
     """
     returns a dictionary 'mass_materials' with material names as keys and their masses in kg as values.
     generator_type: it only accepts the models (strings) 'dd_eesg', 'dd_pmsg', 'gb_pmsg', 'gb_dfig'.
     """
     mass_materials = {}
-    materials_polyfits, mat_polyfits_short, intersection = foundations_mat(consts.VESTAS_FILE)
+    (materials_polyfits, mat_polyfits_short,
+     intersection) = foundations_mat(mat_file=consts.VESTAS_FILE, regression_adjustment=regression_adjustment)
 
     uncertainty = {}
-
-    turbine_power_is_larger = hub_height > intersection['Low alloy steel'].item()
+    if regression_adjustment == 'Hub height':
+        turbine_power_is_larger = hub_height > intersection['Low alloy steel'].item()
+    else:
+        turbine_power_is_larger = hub_height * rotor_diameter * rotor_diameter > intersection['Low alloy steel'].item()
     if not turbine_power_is_larger:
         materials_polyf = mat_polyfits_short
     else:
         materials_polyf = materials_polyfits
     uncertainty['Low alloy steel'] = materials_polyf['Low alloy steel']['std_dev']
-    steel_mass_turbine = materials_polyf['Low alloy steel']['polyfit'](hub_height) * 1000
+    if regression_adjustment == 'Hub height':
+        steel_mass_turbine = materials_polyf['Low alloy steel']['polyfit'](hub_height) * 1000
+    else:
+        steel_mass_turbine = (materials_polyf['Low alloy steel']['polyfit']
+                              (hub_height * rotor_diameter * rotor_diameter) * 1000)
     mass_materials['Low alloy steel'] = steel_mass_turbine
 
     is_larger_true_list = []
@@ -700,6 +716,7 @@ def lci_materials(park_name: str, park_power: float, number_of_turbines: int, pa
                   electricity_mix_steel: Optional[Literal['Norway', 'Europe', 'Poland']] = None,
                   generator_type: Literal['dd_eesg', 'dd_pmsg', 'gb_pmsg', 'gb_dfig'] = 'gb_dfig',
                   include_life_cycle_stages: bool = True,
+                  regression_adjustment: Literal['D2h', 'Hub height'] = 'D2h',
                   comment: str = ''):
     """
     It creates the activities 'park_name_single_turbine' (code: 'park_name_single_turbine'),
@@ -797,7 +814,9 @@ def lci_materials(park_name: str, park_power: float, number_of_turbines: int, pa
     if generator_type not in ['dd_eesg', 'dd_pmsg', 'gb_pmsg', 'gb_dfig']:
         print(generator_type, 'is not an allowed value. We selected the default gb_dfig instead.')
         generator_type = 'gb_dfig'
-    mass_materials, material_polyfits = materials_mass(generator_type, turbine_power, hub_height)
+    mass_materials, material_polyfits = materials_mass(generator_type, turbine_power,
+                                                       hub_height, regression_adjustment=regression_adjustment,
+                                                       rotor_diameter=rotor_diameter)
     for material in mass_materials.keys():
         if any(element in material for element in ['Praseodymium', 'Neodymium', 'Dysprosium', 'Terbium', 'Boron']):
             inp = cutoff391.get(code=consts.MATERIALS_EI391_ACTIVITY_CODES[material]['code'])
@@ -1004,7 +1023,8 @@ def lci_materials(park_name: str, park_power: float, number_of_turbines: int, pa
 
 def end_of_life(scenario: int, park_name: str,
                 generator_type: Literal['dd_eesg', 'dd_pmsg', 'gb_pmsg', 'gb_dfig'],
-                turbine_power: float, hub_height: float, include_life_cycle_stages: bool = True):
+                turbine_power: float, hub_height: float, rotor_diameter: float, include_life_cycle_stages: bool = True,
+                regression_adjustment: Literal['D2h', 'Hub height'] = 'D2h'):
     """
     This function adds the end-of-life of materials to the turbine activity.
     The variable 'scenario' is used to retrieve the dictionary with the activity codes that should be taken
@@ -1032,7 +1052,9 @@ def end_of_life(scenario: int, park_name: str,
         eol_activity = turbine_act
 
     # add materials from the turbine
-    mass_materials, material_polyfits = materials_mass(generator_type, turbine_power, hub_height)
+    mass_materials, material_polyfits = materials_mass(generator_type, turbine_power, hub_height,
+                                                       regression_adjustment=regression_adjustment,
+                                                       rotor_diameter=rotor_diameter)
     for material in mass_materials.keys():
         # metals
         if any(element in material for element in fe_alloys):
@@ -1144,7 +1166,9 @@ def end_of_life(scenario: int, park_name: str,
 
 def maintenance(park_name: str,
                 generator_type: Literal['dd_eesg', 'dd_pmsg', 'gb_pmsg', 'gb_dfig'],
-                turbine_power: float, hub_height: float, lifetime: int, include_life_cycle_stages: bool = True):
+                turbine_power: float, hub_height: float, lifetime: int, rotor_diameter: float,
+                include_life_cycle_stages: bool = True,
+                regression_adjustment: Literal['D2h', 'Hub height'] = 'D2h'):
     """
     This function adds the maintenance activities (inspection trips and oil changes) to the turbine activity.
     Inspection trips: 200 km every 6 months (Elsan Engineering, 2004)
@@ -1166,7 +1190,8 @@ def maintenance(park_name: str,
 
     # Change oil and lubrication
     mass_materials, m_poly = materials_mass(generator_type=generator_type,
-                                            turbine_power=turbine_power, hub_height=hub_height)
+                                            turbine_power=turbine_power, hub_height=hub_height,
+                                            regression_adjustment=regression_adjustment, rotor_diameter=rotor_diameter)
     inp = cutoff391.get(name='market for lubricating oil', code='92391c8c6958ada25b22935e3fa6f06f')
     ex = om_activity.new_exchange(input=inp, type='technosphere',
                                   amount=mass_materials['Lubricating oil'] * (lifetime / 2))
@@ -1185,9 +1210,10 @@ def maintenance(park_name: str,
 
 
 def transport(manufacturer: Literal['Vestas', 'Siemens Gamesa', 'Nordex', 'ENERCON', 'LM Wind'],
-              park_coordinates: tuple, park_name: str,
+              park_coordinates: tuple, park_name: str, rotor_diameter: float,
               generator_type: Optional[Literal['dd_eesg', 'dd_pmsg', 'gb_pmsg', 'gb_dfig']], turbine_power: float,
-              hub_height: float, include_life_cycle_stages: bool = True):
+              hub_height: float, include_life_cycle_stages: bool = True,
+              regression_adjustment: Literal['D2h', 'Hub height'] = 'D2h'):
     """
     **Tower transport. Distance data (in km) according to Vestas report on Vestas V162-6.2 MW.**
     Limitations:
@@ -1206,7 +1232,9 @@ def transport(manufacturer: Literal['Vestas', 'Siemens Gamesa', 'Nordex', 'ENERC
     **General Limitations**
     1) Cable transport not included
     """
-    mat_mass, material_polyfits = materials_mass(generator_type, turbine_power, hub_height)
+    mat_mass, material_polyfits = materials_mass(generator_type, turbine_power, hub_height,
+                                                 regression_adjustment=regression_adjustment,
+                                                 rotor_diameter=rotor_diameter)
 
     for material in mat_mass.keys():
         if 'Concrete' in material:
@@ -1436,7 +1464,8 @@ def auxiliary_road_materials(turbine_power: float, park_name: str, include_life_
 
 def excavation_activities(generator_type: Literal['dd_eesg', 'dd_pmsg', 'gb_pmsg', 'gb_dfig'],
                           turbine_power: float, hub_height: float, rotor_diameter: float,
-                          number_of_turbines: int, park_name: str, include_life_cycle_stages: bool = True):
+                          number_of_turbines: int, park_name: str, include_life_cycle_stages: bool = True,
+                          regression_adjustment: Literal['D2h', 'Hub height'] = 'D2h'):
     """
     Adds to the lci the hydraulic digger activities necessary build the foundations and bury the cables.
     *Data*
@@ -1445,7 +1474,9 @@ def excavation_activities(generator_type: Literal['dd_eesg', 'dd_pmsg', 'gb_pmsg
     Distance between turbines: 8*D (could be too much)
     """
     # foundations volume
-    mat_mass, material_polyfits = materials_mass(generator_type, turbine_power, hub_height)
+    mat_mass, material_polyfits = materials_mass(generator_type, turbine_power, hub_height,
+                                                 regression_adjustment=regression_adjustment,
+                                                 rotor_diameter=rotor_diameter)
     volume_steel = mat_mass['Low alloy steel_foundations'] / 7800  # 7.8 t/m3 is the density of steel
     volume_ch_steel = mat_mass['Chromium steel_foundations'] / 7190  # 7.19 t/m3 is the density of chromium steel
     # volume_copper = mat_mass['Copper_foundations'] / 8960  # 8.96 t/m3 is the density of copper
@@ -1526,6 +1557,7 @@ def lci_wind_turbine(park_name: str, park_power: float, number_of_turbines: int,
                      lifetime: int = 20, land_use_permanent_intensity: int = 3000, land_cover_type: str = None,
                      eol_scenario: int = 1,
                      cf: float = 0.24, time_adjusted_cf: float = 0.009,
+                     regression_adjustment: Literal['D2h', 'Hub height'] = 'D2h',
                      include_life_cycle_stages: bool = True,
                      eol: bool = True, transportation: bool = True,
                      use_and_maintenance: bool = True, installation: bool = True,
@@ -1576,11 +1608,13 @@ def lci_wind_turbine(park_name: str, park_power: float, number_of_turbines: int,
                                         lifetime=lifetime,
                                         turbine_power=turbine_power,
                                         hub_height=hub_height, commissioning_year=commissioning_year,
-                                        include_life_cycle_stages=include_life_cycle_stages, comment=comment)
+                                        include_life_cycle_stages=include_life_cycle_stages, comment=comment,
+                                        regression_adjustment=regression_adjustment)
     if transportation:
         transport(manufacturer=manufacturer, park_coordinates=park_coordinates, park_name=park_name,
                   generator_type=generator_type, turbine_power=turbine_power, hub_height=hub_height,
-                  include_life_cycle_stages=include_life_cycle_stages)
+                  include_life_cycle_stages=include_life_cycle_stages, regression_adjustment=regression_adjustment,
+                  rotor_diameter=rotor_diameter)
     if installation and not land_cover_type:
         trans, occ = land_use(turbine_power=turbine_power, park_name=park_name,
                               include_life_cycle_stages=include_life_cycle_stages, lifetime=lifetime,
@@ -1589,7 +1623,8 @@ def lci_wind_turbine(park_name: str, park_power: float, number_of_turbines: int,
                                  include_life_cycle_stages=include_life_cycle_stages)
         excavation_activities(generator_type=generator_type, turbine_power=turbine_power, hub_height=hub_height,
                               rotor_diameter=rotor_diameter, number_of_turbines=number_of_turbines, park_name=park_name,
-                              include_life_cycle_stages=include_life_cycle_stages)
+                              include_life_cycle_stages=include_life_cycle_stages,
+                              regression_adjustment=regression_adjustment)
     elif installation and land_cover_type:
         trans, occ = land_use(turbine_power=turbine_power, park_name=park_name, manual_land_cover=land_cover_type,
                               include_life_cycle_stages=include_life_cycle_stages, lifetime=lifetime,
@@ -1598,14 +1633,17 @@ def lci_wind_turbine(park_name: str, park_power: float, number_of_turbines: int,
                                  include_life_cycle_stages=include_life_cycle_stages)
         excavation_activities(generator_type=generator_type, turbine_power=turbine_power, hub_height=hub_height,
                               rotor_diameter=rotor_diameter, number_of_turbines=number_of_turbines, park_name=park_name,
-                              include_life_cycle_stages=include_life_cycle_stages)
+                              include_life_cycle_stages=include_life_cycle_stages,
+                              regression_adjustment=regression_adjustment)
     if use_and_maintenance:
         maintenance(park_name=park_name, generator_type=generator_type, turbine_power=turbine_power,
-                    hub_height=hub_height, include_life_cycle_stages=include_life_cycle_stages, lifetime=lifetime)
+                    hub_height=hub_height, include_life_cycle_stages=include_life_cycle_stages, lifetime=lifetime,
+                    regression_adjustment=regression_adjustment, rotor_diameter=rotor_diameter)
     if eol:
         end_of_life(scenario=eol_scenario, park_name=park_name, generator_type=generator_type,
                     turbine_power=turbine_power,
-                    hub_height=hub_height, include_life_cycle_stages=include_life_cycle_stages)
+                    hub_height=hub_height, include_life_cycle_stages=include_life_cycle_stages,
+                    regression_adjustment=regression_adjustment, rotor_diameter=rotor_diameter)
 
     # Create electricity_production activity per turbine and per park (per kWh)
     try:
