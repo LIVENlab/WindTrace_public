@@ -11,6 +11,9 @@ from statistics import linear_regression
 import sys
 import consts
 
+# TODO: update documentation
+# TODO: do a few tests on the new material_mass function
+
 # create a bw25 project, import ecoinvent v.3.9.1 and create an empty database 'new_db'
 bd.projects.set_current(consts.PROJECT_NAME)
 bi.bw2setup()
