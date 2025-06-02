@@ -2,7 +2,6 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import bw2data as bd
-import bw2io as bi
 from geopy.distance import geodesic
 import random
 from typing import Optional, List, Literal, Tuple
@@ -13,21 +12,6 @@ import consts
 
 # TODO: update documentation
 # TODO: do a few tests on the new material_mass functions
-
-# create a bw25 project, import ecoinvent v.3.9.1 and create an empty database 'new_db'
-bd.projects.set_current(consts.PROJECT_NAME)
-bi.bw2setup()
-spold_files = consts.SPOLD_FILES
-if "cutoff391" not in bd.databases:
-    ei = bi.SingleOutputEcospold2Importer(spold_files, "cutoff391", use_mp=False)
-    ei.apply_strategies()
-    ei.write_database()
-cutoff391 = bd.Database("cutoff391")
-if consts.NEW_DB_NAME not in bd.databases:
-    new_db = bd.Database(consts.NEW_DB_NAME)
-    new_db.register()
-new_db = bd.Database(consts.NEW_DB_NAME)
-biosphere3 = bd.Database('biosphere3')
 
 def steel_turbine(plot_mat: bool = False, regression_adjustment: Literal['D2h', 'Hub height'] = 'D2h'):
     """
@@ -358,7 +342,7 @@ def cabling_materials(turbine_power: float, rotor_diameter: float, number_of_tur
     return cable_mat_mass
 
 
-def mva500_transformer():
+def mva500_transformer(new_db: bd.Database, cutoff391: bd.Database):
     """
     It creates the activity "Power transformer TrafoStar 500 MVA" in the database 'new_db' in brightway2. It returns
     the recently created transformer activity as a variable.
@@ -437,7 +421,7 @@ def mva500_transformer():
     return transformer
 
 
-def manipulate_steel_activities(commissioning_year: int, recycled_share: float = None,
+def manipulate_steel_activities(new_db: bd.Database, cutoff391: bd.Database, commissioning_year: int, recycled_share: float = None,
                                 electricity_mix: Optional[Literal['Europe', 'Poland', 'Norway']] = None,
                                 printed_warning: bool = False):
     """
@@ -709,7 +693,7 @@ def manipulate_steel_activities(commissioning_year: int, recycled_share: float =
         print('Something went wrong during the creation of the steel market')
 
 
-def lci_materials(park_name: str, park_power: float, number_of_turbines: int, park_location: str,
+def lci_materials(new_db: bd.Database, cutoff391: bd.Database, park_name: str, park_power: float, number_of_turbines: int, park_location: str,
                   park_coordinates: tuple,
                   manufacturer: Literal['Vestas', 'Siemens Gamesa', 'Nordex', 'Enercon', 'LM Wind'],
                   rotor_diameter: float,
@@ -830,7 +814,8 @@ def lci_materials(park_name: str, park_power: float, number_of_turbines: int, pa
             inp, ch = manipulate_steel_activities(commissioning_year=commissioning_year,
                                                   recycled_share=recycled_share_steel,
                                                   electricity_mix=electricity_mix_steel,
-                                                  printed_warning=consts.PRINTED_WARNING_STEEL)
+                                                  printed_warning=consts.PRINTED_WARNING_STEEL,
+                                                  cutoff391=cutoff391, new_db=new_db)
             consts.PRINTED_WARNING_STEEL = True
             ex = materials_activity.new_exchange(input=inp, type='technosphere', amount=mass_materials[material])
             # Uncertainty added as the standard deviation of the residuals
@@ -845,7 +830,8 @@ def lci_materials(park_name: str, park_power: float, number_of_turbines: int, pa
             steel, ch = manipulate_steel_activities(commissioning_year=commissioning_year,
                                                     recycled_share=recycled_share_steel,
                                                     electricity_mix=electricity_mix_steel,
-                                                    printed_warning=consts.PRINTED_WARNING_STEEL)
+                                                    printed_warning=consts.PRINTED_WARNING_STEEL,
+                                                    new_db=new_db, cutoff391=cutoff391)
             if ch:
                 inp = ch[0]
             else:
@@ -1005,7 +991,7 @@ def lci_materials(park_name: str, park_power: float, number_of_turbines: int, pa
     cables_ex.save()
 
     # add materials from the transformer (downscaled from 500MVA to the park power)
-    transformer = mva500_transformer()
+    transformer = mva500_transformer(cutoff391=cutoff391, new_db=new_db)
     transformer_ex = park_act.new_exchange(input=transformer, type='technosphere', amount=park_power / 500)
     transformer_ex.save()
 
@@ -1024,7 +1010,7 @@ def lci_materials(park_name: str, park_power: float, number_of_turbines: int, pa
     return total_mass_turbines
 
 
-def end_of_life(scenario: int, park_name: str,
+def end_of_life(new_db: bd.Database, cutoff391: bd.Database, scenario: int, park_name: str,
                 generator_type: Literal['dd_eesg', 'dd_pmsg', 'gb_pmsg', 'gb_dfig'],
                 turbine_power: float, hub_height: float, rotor_diameter: float, include_life_cycle_stages: bool = True,
                 regression_adjustment: Literal['D2h', 'Hub height'] = 'D2h'):
@@ -1167,7 +1153,7 @@ def end_of_life(scenario: int, park_name: str,
         eol_ex.save()
 
 
-def maintenance(park_name: str,
+def maintenance(new_db: bd.Database, cutoff391: bd.Database, park_name: str,
                 generator_type: Literal['dd_eesg', 'dd_pmsg', 'gb_pmsg', 'gb_dfig'],
                 turbine_power: float, hub_height: float, lifetime: int, rotor_diameter: float,
                 include_life_cycle_stages: bool = True,
@@ -1212,7 +1198,8 @@ def maintenance(park_name: str,
         om_ex.save()
 
 
-def transport(manufacturer: Literal['Vestas', 'Siemens Gamesa', 'Nordex', 'ENERCON', 'LM Wind'],
+def transport(new_db: bd.Database, cutoff391: bd.Database,
+              manufacturer: Literal['Vestas', 'Siemens Gamesa', 'Nordex', 'ENERCON', 'LM Wind'],
               park_coordinates: tuple, park_name: str, rotor_diameter: float,
               generator_type: Optional[Literal['dd_eesg', 'dd_pmsg', 'gb_pmsg', 'gb_dfig']], turbine_power: float,
               hub_height: float, include_life_cycle_stages: bool = True,
@@ -1305,7 +1292,7 @@ def generate_events_with_probability():
                 return event_type
 
 
-def land_use(turbine_power: float, park_name: str, lifetime: int, manual_land_cover: str = None,
+def land_use(new_db: bd.Database, biosphere3: bd.Database, turbine_power: float, park_name: str, lifetime: int, manual_land_cover: str = None,
              include_life_cycle_stages: bool = True, land_use_permanent_intensity: int = 3000):
     """
     Function to define the flows with the biosphere regarding the land use.
@@ -1419,7 +1406,8 @@ def land_use(turbine_power: float, park_name: str, lifetime: int, manual_land_co
     return transformation_flows, occupation_flows
 
 
-def auxiliary_road_materials(turbine_power: float, park_name: str, include_life_cycle_stages: bool = True):
+def auxiliary_road_materials(new_db: bd.Database, cutoff391: bd.Database,
+                             turbine_power: float, park_name: str, include_life_cycle_stages: bool = True):
     """
     Adds the auxiliary road materials (exchange with: market for road) to the lci.
     *Data sources*
@@ -1446,7 +1434,7 @@ def auxiliary_road_materials(turbine_power: float, park_name: str, include_life_
 
     if not road_act_in_new_db:
         road_act = cutoff391.get(code='3d1d98819862a4057c75095315820d52')
-        road_new = road_act.copy(database="new_db")
+        road_new = road_act.copy(database=consts.NEW_DB_NAME)
         technosphere_activities_to_remove = ['bitumen', 'concrete', 'steel']
         for ex in road_new.biosphere():
             if 'Transformation' in ex.input._data['name'] or 'Occupation' in ex.input._data['name']:
@@ -1465,7 +1453,8 @@ def auxiliary_road_materials(turbine_power: float, park_name: str, include_life_
     new_exc.save()
 
 
-def excavation_activities(generator_type: Literal['dd_eesg', 'dd_pmsg', 'gb_pmsg', 'gb_dfig'],
+def excavation_activities(new_db: bd.Database, cutoff391: bd.Database,
+                          generator_type: Literal['dd_eesg', 'dd_pmsg', 'gb_pmsg', 'gb_dfig'],
                           turbine_power: float, hub_height: float, rotor_diameter: float,
                           number_of_turbines: int, park_name: str, include_life_cycle_stages: bool = True,
                           regression_adjustment: Literal['D2h', 'Hub height'] = 'D2h'):
@@ -1515,7 +1504,7 @@ def excavation_activities(generator_type: Literal['dd_eesg', 'dd_pmsg', 'gb_pmsg
         installation_ex.save()
 
 
-def electricity_production(park_name: str, park_power: float,
+def electricity_production(new_db: bd.Database, park_name: str, park_power: float,
                            cf: float, time_adjusted_cf: float):
     # Finds park activity to extract lifetime and turbine power (saved in comments).
     try:
@@ -1551,7 +1540,8 @@ def electricity_production(park_name: str, park_power: float,
     return elec_prod_turbine, elec_prod_park
 
 
-def lci_wind_turbine(park_name: str, park_power: float, number_of_turbines: int, park_location: str,
+def lci_wind_turbine(new_db: bd.Database, cutoff391: bd.Database, biosphere3: bd.Database,
+                     park_name: str, park_power: float, number_of_turbines: int, park_location: str,
                      park_coordinates: tuple, manufacturer: str, rotor_diameter: int,
                      turbine_power: float, hub_height: float, commissioning_year: int,
                      generator_type: Optional[Literal['dd_eesg', 'dd_pmsg', 'gb_pmsg', 'gb_dfig']] = 'gb_dfig',
@@ -1612,41 +1602,51 @@ def lci_wind_turbine(park_name: str, park_power: float, number_of_turbines: int,
                                         turbine_power=turbine_power,
                                         hub_height=hub_height, commissioning_year=commissioning_year,
                                         include_life_cycle_stages=include_life_cycle_stages, comment=comment,
-                                        regression_adjustment=regression_adjustment)
+                                        regression_adjustment=regression_adjustment,
+                                        new_db=new_db, cutoff391=cutoff391)
     if transportation:
         transport(manufacturer=manufacturer, park_coordinates=park_coordinates, park_name=park_name,
                   generator_type=generator_type, turbine_power=turbine_power, hub_height=hub_height,
                   include_life_cycle_stages=include_life_cycle_stages, regression_adjustment=regression_adjustment,
-                  rotor_diameter=rotor_diameter)
+                  rotor_diameter=rotor_diameter,
+                  new_db=new_db, cutoff391=cutoff391)
     if installation and not land_cover_type:
         trans, occ = land_use(turbine_power=turbine_power, park_name=park_name,
                               include_life_cycle_stages=include_life_cycle_stages, lifetime=lifetime,
-                              land_use_permanent_intensity=land_use_permanent_intensity)
+                              land_use_permanent_intensity=land_use_permanent_intensity,
+                              biosphere3=biosphere3, new_db=new_db)
         auxiliary_road_materials(turbine_power=turbine_power, park_name=park_name,
-                                 include_life_cycle_stages=include_life_cycle_stages)
+                                 include_life_cycle_stages=include_life_cycle_stages,
+                                 new_db=new_db, cutoff391=cutoff391)
         excavation_activities(generator_type=generator_type, turbine_power=turbine_power, hub_height=hub_height,
                               rotor_diameter=rotor_diameter, number_of_turbines=number_of_turbines, park_name=park_name,
                               include_life_cycle_stages=include_life_cycle_stages,
-                              regression_adjustment=regression_adjustment)
+                              regression_adjustment=regression_adjustment,
+                              new_db=new_db, cutoff391=cutoff391)
     elif installation and land_cover_type:
         trans, occ = land_use(turbine_power=turbine_power, park_name=park_name, manual_land_cover=land_cover_type,
                               include_life_cycle_stages=include_life_cycle_stages, lifetime=lifetime,
-                              land_use_permanent_intensity=land_use_permanent_intensity)
+                              land_use_permanent_intensity=land_use_permanent_intensity,
+                              biosphere3=biosphere3, new_db=new_db)
         auxiliary_road_materials(turbine_power=turbine_power, park_name=park_name,
-                                 include_life_cycle_stages=include_life_cycle_stages)
+                                 include_life_cycle_stages=include_life_cycle_stages,
+                                 new_db=new_db, cutoff391=cutoff391)
         excavation_activities(generator_type=generator_type, turbine_power=turbine_power, hub_height=hub_height,
                               rotor_diameter=rotor_diameter, number_of_turbines=number_of_turbines, park_name=park_name,
                               include_life_cycle_stages=include_life_cycle_stages,
-                              regression_adjustment=regression_adjustment)
+                              regression_adjustment=regression_adjustment,
+                              new_db=new_db, cutoff391=cutoff391)
     if use_and_maintenance:
         maintenance(park_name=park_name, generator_type=generator_type, turbine_power=turbine_power,
                     hub_height=hub_height, include_life_cycle_stages=include_life_cycle_stages, lifetime=lifetime,
-                    regression_adjustment=regression_adjustment, rotor_diameter=rotor_diameter)
+                    regression_adjustment=regression_adjustment, rotor_diameter=rotor_diameter,
+                    new_db=new_db, cutoff391=cutoff391)
     if eol:
         end_of_life(scenario=eol_scenario, park_name=park_name, generator_type=generator_type,
                     turbine_power=turbine_power,
                     hub_height=hub_height, include_life_cycle_stages=include_life_cycle_stages,
-                    regression_adjustment=regression_adjustment, rotor_diameter=rotor_diameter)
+                    regression_adjustment=regression_adjustment, rotor_diameter=rotor_diameter,
+                    new_db=new_db, cutoff391=cutoff391)
 
     # Create electricity_production activity per turbine and per park (per kWh)
     try:
@@ -1680,7 +1680,8 @@ def lci_wind_turbine(park_name: str, park_power: float, number_of_turbines: int,
 
     # add infrastructure
     elec_turbine, elec_park = electricity_production(park_name=park_name, park_power=park_power,
-                                                     cf=cf, time_adjusted_cf=time_adjusted_cf)
+                                                     cf=cf, time_adjusted_cf=time_adjusted_cf,
+                                                     new_db=new_db)
     # to turbine activity
     turbine_amount = 1 / elec_turbine
     turbine_act = new_db.get(park_name + '_single_turbine')
@@ -1703,7 +1704,8 @@ def lci_wind_turbine(park_name: str, park_power: float, number_of_turbines: int,
         return mass_materials_park, trans, occ
 
 
-def lca_wind_turbine(park_name: str, park_power: float,
+def lca_wind_turbine(new_db: bd.Database,
+                     park_name: str, park_power: float,
                      method: str = 'ReCiPe 2016 v1.03, midpoint (H)',
                      indicators: List[Tuple[str, str, str]] = None,
                      turbine: bool = True):
@@ -1773,7 +1775,7 @@ def lca_wind_turbine(park_name: str, park_power: float,
     return results, results_kwh
 
 
-def delete_new_db():
+def delete_new_db(new_db: bd.Database):
     for a in new_db:
         a.delete()
     if len(new_db) == 0:
