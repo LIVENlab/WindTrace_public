@@ -47,5 +47,5 @@ The repository has a Jupyter Notebook with a step-by-step guide on how to use Wi
 
 If you use WindTrace for academic work please cite:
 
-Sierra-Montoya, M., Muñoz-Liesa, J., Pérez-Sánchez, L. À., de Tomás-Pascual, A., & Madrid-López, C. (2025). _WindTrace: a parametric life-cycle inventory model for wind turbines. Unveiling the influence of technical parameters on environmental impacts_ [manuscript submitted for publication].
+Sierra-Montoya, M., Muñoz-Liesa, J., Pérez-Sánchez, L. À., de Tomás-Pascual, A., & Madrid-López, C. (2025). _WindTrace: Assessing the environmental impacts of wind energy designs with a parametric life cycle inventory model_ [manuscript submitted for publication].
 
