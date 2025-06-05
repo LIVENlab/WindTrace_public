@@ -1259,25 +1259,44 @@ def end_of_life(new_db: bd.Database, cutoff391: bd.Database, ei_index: dict, sce
             # scenario == 4
             else:
                 recycling_rate = 0.7
-            inp = find_unique_act(index=ei_index,
-                                  database=cutoff391,
-                                  name=consts.EOL_EI_ACTIVITY_CODES[material]['landfill']['name'],
-                                  location=consts.EOL_EI_ACTIVITY_CODES[material]['landfill']['location'],
-                                  reference_product=consts.EOL_EI_ACTIVITY_CODES[material]['landfill'][
-                                      'reference product']
-                                  )
+            try:
+                inp = find_unique_act(index=ei_index,
+                                      database=cutoff391,
+                                      name=consts.EOL_EI_ACTIVITY_CODES[material]['landfill']['name'],
+                                      location=consts.EOL_EI_ACTIVITY_CODES[material]['landfill']['location'],
+                                      reference_product=consts.EOL_EI_ACTIVITY_CODES[material]['landfill'][
+                                          'reference product']
+                                      )
+            except Exception:
+                inp = find_unique_act(index=ei_index,
+                                      database=cutoff391,
+                                      name=consts.EOL_EI_ACTIVITY_CODES[material]['landfill']['name'],
+                                      location='RER',
+                                      reference_product=consts.EOL_EI_ACTIVITY_CODES[material]['landfill'][
+                                          'reference product']
+                                      )
             ex = eol_activity.new_exchange(input=inp, type='technosphere',
                                            amount=mass_materials[material] * (-(1 - recycling_rate)))
             ex.save()
             eol_activity.save()
         elif any(element in material for element in plastics):
-            inp = find_unique_act(index=ei_index,
-                                  database=cutoff391,
-                                  name=consts.EOL_EI_ACTIVITY_CODES[material]['incineration']['name'],
-                                  location=consts.EOL_EI_ACTIVITY_CODES[material]['incineration']['location'],
-                                  reference_product=consts.EOL_EI_ACTIVITY_CODES[material]['incineration'][
-                                      'reference product']
-                                  )
+            try:
+                inp = find_unique_act(index=ei_index,
+                                      database=cutoff391,
+                                      name=consts.EOL_EI_ACTIVITY_CODES[material]['incineration']['name'],
+                                      location=consts.EOL_EI_ACTIVITY_CODES[material]['incineration']['location'],
+                                      reference_product=consts.EOL_EI_ACTIVITY_CODES[material]['incineration'][
+                                          'reference product']
+                                      )
+            except Exception:
+                # change of name in incinerator in 3.10
+                inp = find_unique_act(index=ei_index,
+                                      database=cutoff391,
+                                      name=f"{consts.EOL_EI_ACTIVITY_CODES[material]['incineration']['name']} FAE",
+                                      location=consts.EOL_EI_ACTIVITY_CODES[material]['incineration']['location'],
+                                      reference_product=consts.EOL_EI_ACTIVITY_CODES[material]['incineration'][
+                                          'reference product']
+                                      )
             ex = eol_activity.new_exchange(input=inp, type='technosphere', amount=mass_materials[material] * (-1))
             ex.save()
             eol_activity.save()
@@ -1296,13 +1315,23 @@ def end_of_life(new_db: bd.Database, cutoff391: bd.Database, ei_index: dict, sce
                 ex.save()
                 eol_activity.save()
             else:
-                inp = find_unique_act(index=ei_index,
-                                      database=cutoff391,
-                                      name=consts.EOL_EI_ACTIVITY_CODES[material]['incineration']['name'],
-                                      location=consts.EOL_EI_ACTIVITY_CODES[material]['incineration']['location'],
-                                      reference_product=consts.EOL_EI_ACTIVITY_CODES[material]['incineration'][
-                                          'reference product']
-                                      )
+                try:
+                    inp = find_unique_act(index=ei_index,
+                                          database=cutoff391,
+                                          name=consts.EOL_EI_ACTIVITY_CODES[material]['incineration']['name'],
+                                          location=consts.EOL_EI_ACTIVITY_CODES[material]['incineration']['location'],
+                                          reference_product=consts.EOL_EI_ACTIVITY_CODES[material]['incineration'][
+                                              'reference product']
+                                          )
+                except Exception:
+                    # change of name in incinerator in 3.10
+                    inp = find_unique_act(index=ei_index,
+                                          database=cutoff391,
+                                          name=f"{consts.EOL_EI_ACTIVITY_CODES[material]['incineration']['name']} FAE",
+                                          location=consts.EOL_EI_ACTIVITY_CODES[material]['incineration']['location'],
+                                          reference_product=consts.EOL_EI_ACTIVITY_CODES[material]['incineration'][
+                                              'reference product']
+                                          )
                 ex = eol_activity.new_exchange(input=inp, type='technosphere', amount=mass_materials[material] * (-1))
                 ex.save()
                 eol_activity.save()
@@ -1357,13 +1386,22 @@ def end_of_life(new_db: bd.Database, cutoff391: bd.Database, ei_index: dict, sce
                 ex.save()
                 eol_activity.save()
             else:
-                inp = find_unique_act(index=ei_index,
-                                      database=cutoff391,
-                                      name=consts.EOL_EI_ACTIVITY_CODES[material]['landfill']['name'],
-                                      location=consts.EOL_EI_ACTIVITY_CODES[material]['landfill']['location'],
-                                      reference_product=consts.EOL_EI_ACTIVITY_CODES[material]['landfill'][
-                                          'reference product']
-                                      )
+                try:
+                    inp = find_unique_act(index=ei_index,
+                                          database=cutoff391,
+                                          name=consts.EOL_EI_ACTIVITY_CODES[material]['landfill']['name'],
+                                          location=consts.EOL_EI_ACTIVITY_CODES[material]['landfill']['location'],
+                                          reference_product=consts.EOL_EI_ACTIVITY_CODES[material]['landfill'][
+                                              'reference product']
+                                          )
+                except Exception:
+                    inp = find_unique_act(index=ei_index,
+                                          database=cutoff391,
+                                          name=consts.EOL_EI_ACTIVITY_CODES[material]['landfill']['name'],
+                                          location='RER',
+                                          reference_product=consts.EOL_EI_ACTIVITY_CODES[material]['landfill'][
+                                              'reference product']
+                                          )
                 ex = eol_activity.new_exchange(input=inp, type='technosphere', amount=-mass_materials[material])
                 ex.save()
                 eol_activity.save()
@@ -2035,5 +2073,3 @@ def build_bw_index(database: bd.Database):
         for k, v in data.items()
     }
 
-
-pass
