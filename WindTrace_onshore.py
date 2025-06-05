@@ -1003,7 +1003,7 @@ def lci_materials(new_db: bd.Database, cutoff391: bd.Database, park_name: str, p
                                   name=consts.MATERIAL_PROCESSING_EI_ACTIVITY_CODES[material_name]['name'],
                                   location=consts.MATERIAL_PROCESSING_EI_ACTIVITY_CODES[material_name]['location'],
                                   reference_product=consts.MATERIAL_PROCESSING_EI_ACTIVITY_CODES[material_name][
-                                    'reference product']
+                                      'reference product']
                                   )
             ex = manufacturing_activity.new_exchange(input=inp, type='technosphere', amount=mass_materials[material])
             ex.save()
@@ -1011,9 +1011,10 @@ def lci_materials(new_db: bd.Database, cutoff391: bd.Database, park_name: str, p
         elif 'foundations' in material and 'alloy' in material:
             inp = find_unique_act(database=cutoff391,
                                   name=consts.MATERIAL_PROCESSING_EI_ACTIVITY_CODES['Steel_tower_rolling']['name'],
-                                  location=consts.MATERIAL_PROCESSING_EI_ACTIVITY_CODES['Steel_tower_rolling']['location'],
+                                  location=consts.MATERIAL_PROCESSING_EI_ACTIVITY_CODES['Steel_tower_rolling'][
+                                      'location'],
                                   reference_product=consts.MATERIAL_PROCESSING_EI_ACTIVITY_CODES['Steel_tower_rolling'][
-                       'reference product']
+                                      'reference product']
                                   )
             ex = manufacturing_activity.new_exchange(input=inp, type='technosphere', amount=mass_materials[material])
             ex.save()
@@ -1023,7 +1024,7 @@ def lci_materials(new_db: bd.Database, cutoff391: bd.Database, park_name: str, p
                                   name=consts.MATERIAL_PROCESSING_EI_ACTIVITY_CODES[material]['name'],
                                   location=consts.MATERIAL_PROCESSING_EI_ACTIVITY_CODES[material]['location'],
                                   reference_product=consts.MATERIAL_PROCESSING_EI_ACTIVITY_CODES[material][
-                       'reference product']
+                                      'reference product']
                                   )
             ex = manufacturing_activity.new_exchange(input=inp, type='technosphere', amount=mass_materials[material])
             ex.save()
@@ -1072,7 +1073,7 @@ def lci_materials(new_db: bd.Database, cutoff391: bd.Database, park_name: str, p
                                   name=consts.MATERIAL_PROCESSING_EI_ACTIVITY_CODES['Copper']['name'],
                                   location=consts.MATERIAL_PROCESSING_EI_ACTIVITY_CODES['Copper']['location'],
                                   reference_product=consts.MATERIAL_PROCESSING_EI_ACTIVITY_CODES['Copper'][
-                       'reference product']
+                                      'reference product']
                                   )
             ex = cables_act.new_exchange(input=inp, type='technosphere', amount=cable_mass['Aluminium'])
             ex.save()
@@ -1082,7 +1083,7 @@ def lci_materials(new_db: bd.Database, cutoff391: bd.Database, park_name: str, p
                                   name=consts.MATERIAL_PROCESSING_EI_ACTIVITY_CODES[material]['name'],
                                   location=consts.MATERIAL_PROCESSING_EI_ACTIVITY_CODES[material]['location'],
                                   reference_product=consts.MATERIAL_PROCESSING_EI_ACTIVITY_CODES[material][
-                       'reference product']
+                                      'reference product']
                                   )
             ex = cables_act.new_exchange(input=inp, type='technosphere', amount=cable_mass[material])
             ex.save()
@@ -1175,7 +1176,8 @@ def end_of_life(new_db: bd.Database, cutoff391: bd.Database, scenario: int, park
             inp = find_unique_act(database=cutoff391,
                                   name=consts.EOL_EI_ACTIVITY_CODES[material]['landfill']['name'],
                                   location=consts.EOL_EI_ACTIVITY_CODES[material]['landfill']['location'],
-                                  reference_product=consts.EOL_EI_ACTIVITY_CODES[material]['landfill']['reference product']
+                                  reference_product=consts.EOL_EI_ACTIVITY_CODES[material]['landfill'][
+                                      'reference product']
                                   )
             ex = eol_activity.new_exchange(input=inp, type='technosphere',
                                            amount=mass_materials[material] * (-(1 - recycling_rate)))
@@ -1350,8 +1352,11 @@ def maintenance(new_db: bd.Database, cutoff391: bd.Database, park_name: str,
     else:
         om_activity = turbine_act
     # Inspection trips
-    inp = cutoff391.get(name='transport, passenger car, large size, diesel, EURO 4',
-                        code='dceed1b2fd31e759a751c6dd912a45f3')
+    inp = find_unique_act(database=cutoff391,
+                          name='transport, passenger car, large size, diesel, EURO 4',
+                          location='RER',
+                          reference_product='transport, passenger car, large size, diesel, EURO 4'
+                          )
     ex = om_activity.new_exchange(input=inp, type='technosphere', amount=200 * (lifetime * 2))
     ex.save()
     om_activity.save()
@@ -1360,13 +1365,20 @@ def maintenance(new_db: bd.Database, cutoff391: bd.Database, park_name: str,
     mass_materials, m_poly = materials_mass(generator_type=generator_type,
                                             turbine_power=turbine_power, hub_height=hub_height,
                                             regression_adjustment=regression_adjustment, rotor_diameter=rotor_diameter)
-    inp = cutoff391.get(name='market for lubricating oil', code='92391c8c6958ada25b22935e3fa6f06f')
+    inp = find_unique_act(database=cutoff391,
+                          name='market for lubricating oil',
+                          location='RER',
+                          reference_product='lubricating oil'
+                          )
     ex = om_activity.new_exchange(input=inp, type='technosphere',
                                   amount=mass_materials['Lubricating oil'] * (lifetime / 2))
     ex.save()
     om_activity.save()
-    inp = cutoff391.get(name='treatment of waste mineral oil, hazardous waste incineration, with energy recovery',
-                        code='ad6d0f2a8b45536da196238df879077b')
+    inp = find_unique_act(database=cutoff391,
+                          name='treatment of waste mineral oil, hazardous waste incineration, with energy recovery',
+                          location='Europe without Switzerland',
+                          reference_product='waste mineral oil'
+                          )
     ex = om_activity.new_exchange(input=inp, type='technosphere',
                                   amount=mass_materials['Lubricating oil'] * -(lifetime / 2))
     ex.save()
@@ -1419,8 +1431,11 @@ def transport(new_db: bd.Database, cutoff391: bd.Database,
             others_amount = (sum(mat_mass.values()) - mat_mass['Concrete_foundations']
                              - mat_mass['Low alloy steel']) / 1000 * min(distance_dict.keys())
 
-    truck_trans = cutoff391.get(name='market for transport, freight, lorry >32 metric ton, EURO6',
-                                code='508cc8b20d83e7b31af9848e1fb45815', location='RER')
+    truck_trans = find_unique_act(database=cutoff391,
+                                  name='market for transport, freight, lorry >32 metric ton, EURO6',
+                                  location='RER',
+                                  reference_product='transport, freight, lorry >32 metric ton, EURO6'
+                                  )
 
     turbine_act = new_db.search(park_name + '_single_turbine')[0]
     if include_life_cycle_stages:
@@ -1613,7 +1628,11 @@ def auxiliary_road_materials(new_db: bd.Database, cutoff391: bd.Database,
     road_act_in_new_db = new_db.search('road construction')
 
     if not road_act_in_new_db:
-        road_act = cutoff391.get(code='3d1d98819862a4057c75095315820d52')
+        road_act = find_unique_act(database=cutoff391,
+                                   name='road construction',
+                                   location='RoW',
+                                   reference_product='road'
+                                   )
         road_new = road_act.copy(database=consts.NEW_DB_NAME)
         technosphere_activities_to_remove = ['bitumen', 'concrete', 'steel']
         for ex in road_new.biosphere():
@@ -1661,8 +1680,11 @@ def excavation_activities(new_db: bd.Database, cutoff391: bd.Database,
     cabling_volume = 1.1 * 0.85 * cable_length
 
     # define brightway activities
-    digger_act = cutoff391.get(name='excavation, hydraulic digger',
-                               code='dc208e3cd1b01954185c03259c97a36a', location='RER')
+    digger_act = find_unique_act(database=cutoff391,
+                                 name='excavation, hydraulic digger',
+                                 location='RER',
+                                 reference_product='excavation, hydraulic digger'
+                                 )
     turbine_act = new_db.search(park_name + '_single_turbine')[0]
     cables_act = new_db.search(park_name + '_cables')[0]
     if include_life_cycle_stages:
