@@ -1,144 +1,194 @@
 import os
 
 # When possible, RER or Europe without Switzerland locations have been selected
-MATERIALS_EI391_ACTIVITY_CODES = {
-    'Low alloy steel': {'name': 'market for steel, low-alloyed', 'code': 'a81ce0e882f1b0ef617462fc8e7472e4'},
-    'Low alloy steel_foundations': {'name': 'market for reinforcing steel', 'code': 'bd3a3818f60643fd78eccefa7b4390c1'},
-    'Chromium steel': {'name': 'market for steel, chromium steel 18/8', 'code': '6af7fc101112f29fb43953d562902932'},
-    'Chromium steel_foundations': {'name': 'market for steel, chromium steel 18/8',
-                                   'code': '6af7fc101112f29fb43953d562902932'},
-    'Cast iron': {'name': 'market for cast iron', 'code': 'e6ba5991b1ecab06c9e5ebc33af41364'},
-    'Aluminium': {'name': 'market for aluminium, wrought alloy', 'code': 'd25c8e0755ee9899fb4e892990397a68'},
-    'Copper': {'name': 'market for copper, cathode', 'code': '8b62f30ed586a5f23611ef196cc97b93'},
-    'Copper_foundations': {'name': 'market for copper, cathode', 'code': '8b62f30ed586a5f23611ef196cc97b93'},
-    'Epoxy resin': {'name': 'market for epoxy resin, liquid', 'code': '0ffc6bd2671c856cc5cc362bb1aba7b1'},
-    'Rubber': {'name': 'market for synthetic rubber', 'code': 'c37f51d47f6f5d1e8d6c8d1eb61d335c'},
-    'PUR': {'name': 'market for polyurethane, rigid foam', 'code': 'dfd8dafa15514464a61eb5b968e6ba86'},
-    'PVC': {'name': 'market for polyvinylchloride, bulk polymerised', 'code': '342baff30ae57e0573e84257026d5e2e'},
-    'PE': {'name': 'polyethylene, high density, granulate', 'code': '22db46f6ba1211c058e4da0ac386d3e7'},
-    'Fiberglass': {'name': 'market for glass fibre reinforced plastic, polyamide, injection moulded',
-                   'code': 'baf9fd46b7a5fc32fc070e2c1aa4674c'},
-    'electronics': {'name': 'market for electronics, for control units', 'code': '23810b0bbe04fca71b0f53fc97d56360'},
-    'Electrics': {'name': 'cable production, unspecified', 'code': 'e9c1cf3df7b69da66ba6c8859e33ae15'},
-    'Lubricating oil': {'name': 'market for lubricating oil', 'code': '92391c8c6958ada25b22935e3fa6f06f'},
-    'Ethyleneglycol': {'name': 'market for ethylene glycol', 'code': 'e229ace9c0c670aef7c1998446d5c3ca'},
-    'Praseodymium': {'name': 'market for praseodymium oxide', 'code': '2569d108fa88c377eb339db47a45a03f'},
-    'Neodymium': {'name': 'market for neodymium oxide', 'code': 'bfb5b92cc635472a79a03c702a79fd53'},
-    'Dysprosium': {'name': 'market for dysprosium oxide', 'code': '975770f48967d9f9ea82f1ac4648f7c5'},
-    'Terbium': {'name': 'market for terbium oxide', 'code': 'c44447ec9b7a72217943165e42a6e56d'},
-    'Boron': {'name': 'market for boron carbide', 'code': 'db1891062e32e3ef010d13d2619c7ba3'},
-    'Concrete_foundations': {'name': 'market group for concrete, normal',
-                             'code': 'aa1ab624a71fdc35bdb2fabb8d02c8ec'}
+MATERIALS_EI_ACTIVITY_CODES = {
+    'Low alloy steel':
+        {'name': 'market for steel, low-alloyed', 'location': 'GLO', 'reference product': 'steel, low-alloyed'},
+    'Low alloy steel_foundations':
+        {'name': 'market for reinforcing steel', 'location': 'GLO', 'reference product': 'reinforcing steel'},
+    'Chromium steel':
+        {'name': 'market for steel, chromium steel 18/8', 'location': 'GLO', 'reference product': 'steel, chromium steel 18/8'},
+    'Chromium steel_foundations':
+        {'name': 'market for steel, chromium steel 18/8', 'location': 'GLO', 'reference product': 'steel, chromium steel 18/8'},
+    'Cast iron':
+        {'name': 'market for cast iron', 'location': 'GLO', 'reference product': 'cast iron'},
+    'Aluminium':
+        {'name': 'market for aluminium, wrought alloy', 'location': 'GLO', 'reference product': 'aluminium, wrought alloy'},
+    'Copper':
+        {'name': 'market for copper, cathode', 'location': 'GLO', 'reference product': 'copper, cathode'},
+    'Copper_foundations':
+        {'name': 'market for copper, cathode', 'location': 'GLO', 'reference product': 'copper, cathode'},
+    'Epoxy resin':
+        {'name': 'market for epoxy resin, liquid', 'location': 'RER', 'reference product': 'epoxy resin, liquid'},
+    'Rubber':
+        {'name': 'market for synthetic rubber', 'location': 'GLO', 'reference product': 'synthetic rubber'},
+    'PUR':
+        {'name': 'market for polyurethane, rigid foam', 'location': 'RER', 'reference product': 'polyurethane, rigid foam'},
+    'PVC':
+        {'name': 'market for polyvinylchloride, bulk polymerised', 'location': 'GLO', 'reference product': 'polyvinylchloride, bulk polymerised'},
+    'PE':
+        {'name': 'market for polyethylene, high density, granulate', 'location': 'GLO', 'reference product': 'polyethylene, high density, granulate'},
+    'Fiberglass':
+        {'name': 'market for glass fibre reinforced plastic, polyamide, injection moulded', 'location': 'GLO', 'reference product': 'glass fibre reinforced plastic, polyamide, injection moulded'},
+    'electronics':
+        {'name': 'market for electronics, for control units', 'location': 'GLO', 'reference product': 'electronics, for control units'},
+    'Electrics':
+        {'name': 'cable production, unspecified', 'location': 'GLO', 'reference product': 'cable, unspecified'},
+    'Lubricating oil':
+        {'name': 'market for lubricating oil', 'location': 'RER', 'reference product': 'lubricating oil'},
+    'Ethyleneglycol':
+        {'name': 'market for ethylene glycol', 'location': 'GLO', 'reference product': 'ethylene glycol'},
+    'Praseodymium':
+        {'name': 'market for praseodymium oxide', 'location': 'GLO', 'reference product': 'praseodymium oxide'},
+    'Neodymium':
+        {'name': 'market for neodymium oxide', 'location': 'GLO', 'reference product': 'neodymium oxide'},
+    'Dysprosium':
+        {'name': 'market for dysprosium oxide', 'location': 'GLO', 'reference product': 'dysprosium oxide'},
+    'Terbium':
+        {'name': 'market for terbium oxide', 'location': 'GLO', 'reference product': 'terbium oxide'},
+    'Boron':
+        {'name': 'market for boron carbide', 'location': 'GLO', 'reference product': 'boron carbide'},
+    'Concrete_foundations':
+        {'name': 'market group for concrete, normal strength', 'location': 'GLO', 'reference product': 'concrete, normal strength'}
 }
 
-EOL_S1_EI391_ACTIVITY_CODES = {
-    'Low alloy steel': {'landfill': {'name': 'treatment of scrap steel, inert material landfill',
-                                     'code': 'f97add46fd2ba618668377d76a1b66bd'},
-                        'incineration': {'name': 'treatment of scrap steel, municipal incineration',
-                                         'code': '93367683cadf9f4ffdbce969a03f4c50'}},
-    'Low alloy steel_foundations': {'landfill': {'name': 'treatment of scrap steel, inert material landfill',
-                                                 'code': 'f97add46fd2ba618668377d76a1b66bd'},
-                                    'incineration': {'name': 'treatment of scrap steel, municipal incineration',
-                                                     'code': '93367683cadf9f4ffdbce969a03f4c50'}},
-    'Chromium steel': {'landfill': {'name': 'treatment of scrap steel, inert material landfill',
-                                    'code': 'f97add46fd2ba618668377d76a1b66bd'},
-                       'incineration': {'name': 'treatment of scrap steel, municipal incineration',
-                                        'code': '93367683cadf9f4ffdbce969a03f4c50'}},
-    'Chromium steel_foundations': {'landfill': {'name': 'treatment of scrap steel, inert material landfill',
-                                                'code': 'f97add46fd2ba618668377d76a1b66bd'},
-                                   'incineration': {'name': 'treatment of scrap steel, municipal incineration',
-                                                    'code': '93367683cadf9f4ffdbce969a03f4c50'}},
-    'Cast iron': {'landfill': {'name': 'treatment of scrap steel, inert material landfill',  # proxy
-                               'code': 'f97add46fd2ba618668377d76a1b66bd'},
-                  'incineration': {'name': 'treatment of scrap steel, municipal incineration',  # proxy
-                                   'code': '93367683cadf9f4ffdbce969a03f4c50'}},
-    'Aluminium': {'landfill': {'name': 'treatment of waste aluminium, sanitary landfill',
-                               'code': 'ee8bd09e74b8b4c4e1343b333aab7130'},
-                  'incineration': {'name': 'treatment of scrap aluminium, municipal incineration',
-                                   'code': 'e03c44cbb2aba9f10d107c135b7b8fad'}},
-    'Copper': {'landfill': {'name': 'treatment of copper slag, residual material landfill',
-                            'code': '0c9cd95424bf180649027c720b520da1'},
-               'incineration': {'name': 'treatment of scrap copper, municipal incineration',
-                                'code': '11373a42f15363b80251656bfcb1e55e'}},
-    'Copper_foundations': {'landfill': {'name': 'treatment of copper slag, residual material landfill',
-                                        'code': '0c9cd95424bf180649027c720b520da1'},
-                           'incineration': {'name': 'treatment of scrap copper, municipal incineration',
-                                            'code': '11373a42f15363b80251656bfcb1e55e'}},
-    'Epoxy resin': {'landfill': {'name': 'treatment of inert waste, sanitary landfill',  # proxy
-                                 'code': 'f04ff5258998b6a607333d69d377104d'},
-                    'incineration': {'name': 'treatment of waste polyurethane, municipal incineration',  # proxy
-                                     'code': 'b7d3a0fd6c740e74321b258671b8aa63'}},
-    'Rubber': {'landfill': {'name': 'treatment of inert waste, sanitary landfill',  # proxy
-                            'code': 'f04ff5258998b6a607333d69d377104d'},
-               'incineration': {'name': 'treatment of waste rubber, unspecified, municipal incineration',
-                                'code': '02468870e1d28d544ba2dfc774a7e0bf'}},
-    'PUR': {'landfill': {'name': 'treatment of inert waste, sanitary landfill',  # proxy
-                         'code': 'f04ff5258998b6a607333d69d377104d'},
-            'incineration': {'name': 'treatment of waste polyurethane, municipal incineration',
-                             'code': 'b7d3a0fd6c740e74321b258671b8aa63'}},
-    'PVC': {'landfill': {'name': 'treatment of waste polyvinylchloride, sanitary landfill',
-                         'code': 'd561874f1a0e2d39810805fdcddf6528'},
-            'incineration': {'name': 'treatment of waste polyvinylchloride, municipal incineration',
-                             'code': 'b98f7051abb38cf81cd4f402894e0759'}},
-    'PE': {'landfill': {'name': 'treatment of waste polyethylene, sanitary landfill',
-                        'code': 'f31b6ca086d5fd0ad2926e1f5be77b3f'},
-           'incineration': {'name': 'treatment of waste polyethylene, municipal incineration',
-                            'code': '3d0ff6a87049ddea69f6004f7f291d1e'}},
-    'Fiberglass': {'landfill': {'name': 'treatment of waste glass, sanitary landfill',  # proxy
-                                'code': '22f1877975b61ab2c622842dcabb8f57'},
-                   'incineration': {'name': 'treatment of waste glass, municipal incineration',  # proxy
-                                    'code': '4bc9d21071e8ba4901877ca4ab4ba175'}},
-    'electronics': {'landfill': {'name': 'treatment of inert waste, sanitary landfill',  # proxy
-                                 'code': 'f04ff5258998b6a607333d69d377104d'},
-                    'incineration': {'name': None,
-                                     'code': None}},
-    'Electrics': {'landfill': {'name': 'treatment of inert waste, sanitary landfill',  # proxy
-                               'code': 'f04ff5258998b6a607333d69d377104d'},
-                  'incineration': {'name': None,
-                                   'code': None}},
-    'Lubricating oil': {'landfill': {'name': None,
-                                     'code': None},
-                        'incineration': {
-                            'name': 'treatment of waste mineral oil, hazardous waste incineration, with energy recovery',
-                            'code': 'ad6d0f2a8b45536da196238df879077b'}},
-    'Praseodymium': {'landfill': {'name': 'treatment of inert waste, sanitary landfill',  # proxy
-                                  'code': 'f04ff5258998b6a607333d69d377104d'},
-                     'incineration': {'name': None,
-                                      'code': None}},
-    'Neodymium': {'landfill': {'name': 'treatment of inert waste, sanitary landfill',  # proxy
-                               'code': 'f04ff5258998b6a607333d69d377104d'},
-                  'incineration': {'name': None,
-                                   'code': None}},
-    'Dysprosium': {'landfill': {'name': 'treatment of inert waste, sanitary landfill',  # proxy
-                                'code': 'f04ff5258998b6a607333d69d377104d'},
-                   'incineration': {'name': None,
-                                    'code': None}},
-    'Terbium': {'landfill': {'name': 'treatment of inert waste, sanitary landfill',  # proxy
-                             'code': 'f04ff5258998b6a607333d69d377104d'},
-                'incineration': {'name': None,
-                                 'code': None}},
-    'Boron': {'landfill': {'name': 'treatment of inert waste, sanitary landfill',  # proxy
-                           'code': 'f04ff5258998b6a607333d69d377104d'},
-              'incineration': {'name': None,
-                               'code': None}},
-    'Concrete_foundations': {'landfill': {'name': 'treatment of waste concrete, inert material landfill',
-                                          'code': '373d58f6430eb96257b7eef4a077f750'},
-                             'incineration': {'name': None,
-                                              'code': None}}
+EOL_EI_ACTIVITY_CODES = {
+    'Low alloy steel':
+        {'landfill':
+             {'name': 'treatment of scrap steel, inert material landfill', 'location': 'Europe without Switzerland', 'reference product': 'scrap steel'},
+         'incineration':
+             {'name': 'treatment of scrap steel, municipal incineration', 'location': 'Europe without Switzerland', 'reference product': 'scrap steel'}},
+    'Low alloy steel_foundations':
+        {'landfill':
+             {'name': 'treatment of scrap steel, inert material landfill', 'location': 'Europe without Switzerland', 'reference product': 'scrap steel'},
+         'incineration':
+             {'name': 'treatment of scrap steel, municipal incineration', 'location': 'Europe without Switzerland', 'reference product': 'scrap steel'}},
+    'Chromium steel':
+        {'landfill':
+             {'name': 'treatment of scrap steel, inert material landfill', 'location': 'Europe without Switzerland', 'reference product': 'scrap steel'},
+         'incineration':
+             {'name': 'treatment of scrap steel, municipal incineration', 'location': 'Europe without Switzerland', 'reference product': 'scrap steel'}},
+    'Chromium steel_foundations':
+        {'landfill':
+             {'name': 'treatment of scrap steel, inert material landfill', 'location': 'Europe without Switzerland', 'reference product': 'scrap steel'},
+         'incineration':
+             {'name': 'treatment of scrap steel, municipal incineration', 'location': 'Europe without Switzerland', 'reference product': 'scrap steel'}},
+    'Cast iron':
+        {'landfill':
+             {'name': 'treatment of scrap steel, inert material landfill', 'location': 'Europe without Switzerland', 'reference product': 'scrap steel'},
+         'incineration': {'name': 'treatment of scrap steel, municipal incineration', 'location': 'Europe without Switzerland', 'reference product': 'scrap steel'}},
+    'Aluminium':
+        {'landfill':
+             {'name': 'treatment of waste aluminium, sanitary landfill', 'location': 'CH', 'reference product': 'waste aluminium'},
+         'incineration':
+             {'name': 'treatment of scrap aluminium, municipal incineration', 'location': 'Europe without Switzerland', 'reference product': 'scrap aluminium'}},
+    'Copper':
+        {'landfill':
+             {'name': 'treatment of copper slag, residual material landfill', 'location': 'GLO', 'reference product': 'copper slag'},
+         'incineration':
+             {'name': 'treatment of scrap copper, municipal incineration', 'location': 'Europe without Switzerland', 'reference product': 'scrap copper'}},
+    'Copper_foundations':
+        {'landfill':
+             {'name': 'treatment of copper slag, residual material landfill', 'location': 'GLO', 'reference product': 'copper slag'},
+         'incineration':
+             {'name': 'treatment of scrap copper, municipal incineration', 'location': 'Europe without Switzerland', 'reference product': 'scrap copper'}},
+    'Epoxy resin':
+        {'landfill':
+             {'name': 'treatment of inert waste, sanitary landfill', 'location': 'Europe without Switzerland', 'reference product': 'inert waste'},
+         'incineration':
+             {'name': 'treatment of waste polyurethane, municipal incineration', 'location': 'CH', 'reference product': 'waste polyurethane'}},
+    'Rubber':
+        {'landfill':
+             {'name': 'treatment of inert waste, sanitary landfill', 'location': 'Europe without Switzerland', 'reference product': 'inert waste'},
+         'incineration':
+             {'name': 'treatment of waste rubber, unspecified, municipal incineration', 'location': 'Europe without Switzerland', 'reference product': 'waste rubber, unspecified'}},
+    'PUR':
+        {'landfill':
+             {'name': 'treatment of inert waste, sanitary landfill', 'location': 'Europe without Switzerland', 'reference product': 'inert waste'},
+         'incineration':
+             {'name': 'treatment of waste polyurethane, municipal incineration', 'location': 'CH', 'reference product': 'waste polyurethane'}},
+    'PVC':
+        {'landfill':
+             {'name': 'treatment of waste polyvinylchloride, sanitary landfill', 'location': 'CH', 'reference product': 'waste polyvinylchloride'},
+         'incineration':
+             {'name': 'treatment of waste polyvinylchloride, municipal incineration', 'location': 'CH', 'reference product': 'waste polyvinylchloride'}},
+    'PE':
+        {'landfill':
+             {'name': 'treatment of waste polyethylene, sanitary landfill', 'location': 'CH', 'reference product': 'waste polyethylene'},
+         'incineration':
+             {'name': 'treatment of waste polyethylene, municipal incineration', 'location': 'CH', 'reference product': 'waste polyethylene'}},
+    'Fiberglass':
+        {'landfill':
+             {'name': 'treatment of waste glass, sanitary landfill', 'location': 'GLO', 'reference product': 'waste glass'},
+         'incineration':
+             {'name': 'treatment of waste glass, municipal incineration', 'location': 'CH', 'reference product': 'waste glass'}},
+    'electronics':
+        {'landfill':
+             {'name': 'treatment of inert waste, sanitary landfill', 'location': 'Europe without Switzerland', 'reference product': 'inert waste'},
+         'incineration':
+             {'name': None, 'location': None, 'reference product': None}},
+    'Electrics':
+        {'landfill':
+             {'name': 'treatment of inert waste, sanitary landfill', 'location': 'Europe without Switzerland', 'reference product': 'inert waste'},
+         'incineration':
+             {'name': None, 'location': None, 'reference product': None}},
+    'Lubricating oil':
+        {'landfill':
+             {'name': None, 'location': None, 'reference product': None},
+         'incineration':
+             {'name': 'treatment of waste mineral oil, hazardous waste incineration, with energy recovery', 'location': 'Europe without Switzerland', 'reference product': 'waste mineral oil'}},
+    'Praseodymium':
+        {'landfill':
+             {'name': 'treatment of inert waste, sanitary landfill', 'location': 'Europe without Switzerland', 'reference product': 'inert waste'},
+         'incineration':
+             {'name': None, 'location': None, 'reference product': None}},
+    'Neodymium':
+        {'landfill':
+             {'name': 'treatment of inert waste, sanitary landfill', 'location': 'Europe without Switzerland', 'reference product': 'inert waste'},
+         'incineration':
+             {'name': None, 'location': None, 'reference product': None}},
+    'Dysprosium':
+        {'landfill':
+             {'name': 'treatment of inert waste, sanitary landfill', 'location': 'Europe without Switzerland', 'reference product': 'inert waste'},
+         'incineration':
+             {'name': None, 'location': None, 'reference product': None}},
+    'Terbium':
+        {'landfill':
+             {'name': 'treatment of inert waste, sanitary landfill', 'location': 'Europe without Switzerland', 'reference product': 'inert waste'},
+         'incineration':
+             {'name': None, 'location': None, 'reference product': None}},
+    'Boron':
+        {'landfill':
+             {'name': 'treatment of inert waste, sanitary landfill', 'location': 'Europe without Switzerland', 'reference product': 'inert waste'},
+         'incineration':
+             {'name': None, 'location': None, 'reference product': None}},
+    'Concrete_foundations':
+        {'landfill':
+             {'name': 'treatment of waste concrete, inert material landfill', 'location': 'Europe without Switzerland', 'reference product': 'waste concrete'},
+         'incineration':
+             {'name': None, 'location': None, 'reference product': None}}
 }
 
-MATERIAL_PROCESSING_EI391_ACTIVITY_CODES = {
-    'Copper': {'name': 'market for wire drawing, copper', 'code': 'd6369e6d8436b2dae14e1320d15428ef'},
-    'Aluminium': {'name': 'market for sheet rolling, aluminium', 'code': 'acf665d13787149d4c1e71a8ae475b41'},
-    'Chromium steel': {'name': 'market for sheet rolling, chromium steel', 'code': '43c86f918884ea7799596c841f5121fc'},
-    'Steel_tower_rolling': {'name': 'market for section bar rolling, steel',
-                            'code': 'd4a112fba0d7d6ef32c25cae044a5010'},
-    'Steel_tower_welding': {'name': 'market for welding, arc, steel', 'code': 'f0f521d7de0e50b4a2014eec8800b2b7'},
-    'Cast iron': {'name': 'market for section bar rolling, steel', 'code': 'd4a112fba0d7d6ef32c25cae044a5010'},
-    'Zinc coating': {'name': 'zinc coating, pieces', 'code': '429ee8a600b97b759e5a0e9b45d4642f'},
-    'PVC': {'name': 'extrusion, plastic film', 'code': 'd5adcf93135d0fc061c8bad0200f4cd1'},
-    'PE': {'name': 'extrusion, plastic film', 'code': 'd5adcf93135d0fc061c8bad0200f4cd1'}
-}
+
+MATERIAL_PROCESSING_EI_ACTIVITY_CODES = {
+    'Copper':
+        {'name': 'market for wire drawing, copper', 'location': 'GLO', 'reference product': 'wire drawing, copper'},
+    'Aluminium':
+        {'name': 'market for sheet rolling, aluminium', 'location': 'GLO', 'reference product': 'sheet rolling, aluminium'},
+    'Chromium steel':
+        {'name': 'market for sheet rolling, chromium steel', 'location': 'GLO', 'reference product': 'sheet rolling, chromium steel'},
+    'Steel_tower_rolling':
+        {'name': 'market for section bar rolling, steel', 'location': 'GLO', 'reference product': 'section bar rolling, steel'},
+    'Steel_tower_welding':
+        {'name': 'market for welding, arc, steel', 'location': 'GLO', 'reference product': 'welding, arc, steel'},
+    'Cast iron':
+        {'name': 'market for section bar rolling, steel', 'location': 'GLO', 'reference product': 'section bar rolling, steel'},
+    'Zinc coating':
+        {'name': 'zinc coating, pieces', 'location': 'RER', 'reference product': 'zinc coat, pieces'},
+    'PVC':
+        {'name': 'extrusion, plastic film', 'location': 'RER', 'reference product': 'extrusion, plastic film'},
+    'PE':
+        {'name': 'extrusion, plastic film', 'location': 'RER', 'reference product': 'extrusion, plastic film'}}
 
 MANUFACTURER_LOC = {'Vestas': {1: {'country': 'DK', 'location': (54.8291253662034, 11.1212115492466)},
                                2: {'country': 'DK', 'location': (56.0227841143509, 8.38093375265438)},
@@ -174,7 +224,86 @@ MANUFACTURER_LOC = {'Vestas': {1: {'country': 'DK', 'location': (54.829125366203
 # Luxembourg was assigned Belgium's and Bulgaria was assigned Romania's.
 # Europe is a net importer since 2017, but was a clear net exporter until then. Therefore, it is assumed
 # that all the steel used in the turbines is European-made.
-steel_data_EU27 = {'AT': {'share': 4.98, 'elect_code': '6f61d8326ee98b75ab4136e87d0844c6',
+STEEL_DATA_EU27 = {
+    'AT':
+        {'share': 4.98,
+         'elect': {'name': 'market for electricity, medium voltage', 'location': 'AT', 'reference product': 'electricity, medium voltage'},
+         'gas': {'name': 'market for natural gas, high pressure', 'location': 'AT', 'reference product': 'natural gas, high pressure'}},
+    'BE':
+        {'share': 4.91,
+         'elect': {'name': 'market for electricity, medium voltage', 'location': 'BE', 'reference product': 'electricity, medium voltage'},
+         'gas': {'name': 'market for natural gas, high pressure', 'location': 'BE', 'reference product': 'natural gas, high pressure'}},
+    'BG':
+        {'share': 0.39,
+         'elect': {'name': 'market for electricity, medium voltage', 'location': 'BG', 'reference product': 'electricity, medium voltage'},
+         'gas': {'name': 'market for natural gas, high pressure', 'location': 'RO', 'reference product': 'natural gas, high pressure'}},
+    'CZ':
+        {'share': 3.14,
+         'elect': {'name': 'market for electricity, medium voltage', 'location': 'CZ', 'reference product': 'electricity, medium voltage'},
+         'gas': {'name': 'market for natural gas, high pressure', 'location': 'CZ', 'reference product': 'natural gas, high pressure'}},
+    'DE':
+        {'share': 26.97,
+         'elect': {'name': 'market for electricity, medium voltage', 'location': 'DE', 'reference product': 'electricity, medium voltage'},
+         'gas': {'name': 'market for natural gas, high pressure', 'location': 'DE', 'reference product': 'natural gas, high pressure'}},
+    'ES':
+        {'share': 9.07,
+         'elect': {'name': 'market for electricity, medium voltage', 'location': 'ES', 'reference product': 'electricity, medium voltage'},
+         'gas': {'name': 'market for natural gas, high pressure', 'location': 'ES', 'reference product': 'natural gas, high pressure'}},
+    'FI':
+        {'share': 2.61,
+         'elect': {'name': 'market for electricity, medium voltage', 'location': 'FI', 'reference product': 'electricity, medium voltage'},
+         'gas': {'name': 'market for natural gas, high pressure', 'location': 'FI', 'reference product': 'natural gas, high pressure'}},
+    'FR':
+        {'share': 9.51,
+         'elect': {'name': 'market for electricity, medium voltage', 'location': 'FR', 'reference product': 'electricity, medium voltage'},
+         'gas': {'name': 'market for natural gas, high pressure', 'location': 'FR', 'reference product': 'natural gas, high pressure'}},
+    'GR':
+        {'share': 0.94,
+         'elect': {'name': 'market for electricity, medium voltage', 'location': 'GR', 'reference product': 'electricity, medium voltage'},
+         'gas': {'name': 'market for natural gas, high pressure', 'location': 'GR', 'reference product': 'natural gas, high pressure'}},
+    'HR':
+        {'share': 0.06,
+         'elect': {'name': 'market for electricity, medium voltage', 'location': 'HR', 'reference product': 'electricity, medium voltage'},
+         'gas': {'name': 'market for natural gas, high pressure', 'location': 'IT', 'reference product': 'natural gas, high pressure'}},
+    'HU':
+        {'share': 1.11,
+         'elect': {'name': 'market for electricity, medium voltage', 'location': 'HU', 'reference product': 'electricity, medium voltage'},
+         'gas': {'name': 'market for natural gas, high pressure', 'location': 'HU', 'reference product': 'natural gas, high pressure'}},
+    'IT':
+        {'share': 15.62,
+         'elect': {'name': 'market for electricity, medium voltage', 'location': 'IT', 'reference product': 'electricity, medium voltage'},
+         'gas': {'name': 'market for natural gas, high pressure', 'location': 'IT', 'reference product': 'natural gas, high pressure'}},
+    'LU':
+        {'share': 1.41,
+         'elect': {'name': 'market for electricity, medium voltage', 'location': 'LU', 'reference product': 'electricity, medium voltage'},
+         'gas': {'name': 'market for natural gas, high pressure', 'location': 'BE', 'reference product': 'natural gas, high pressure'}},
+    'NL':
+        {'share': 4.42,
+         'elect': {'name': 'market for electricity, medium voltage', 'location': 'NL', 'reference product': 'electricity, medium voltage'},
+         'gas': {'name': 'market for natural gas, high pressure', 'location': 'NL', 'reference product': 'natural gas, high pressure'}},
+    'PL':
+        {'share': 6.14,
+         'elect': {'name': 'market for electricity, medium voltage', 'location': 'PL', 'reference product': 'electricity, medium voltage'},
+         'gas': {'name': 'market for natural gas, high pressure', 'location': 'PL', 'reference product': 'natural gas, high pressure'}},
+    'RO':
+        {'share': 2.22,
+         'elect': {'name': 'market for electricity, medium voltage', 'location': 'RO', 'reference product': 'electricity, medium voltage'},
+         'gas': {'name': 'market for natural gas, high pressure', 'location': 'RO', 'reference product': 'natural gas, high pressure'}},
+    'SE':
+        {'share': 3.09,
+         'elect': {'name': 'market for electricity, medium voltage', 'location': 'SE', 'reference product': 'electricity, medium voltage'},
+         'gas': {'name': 'market for natural gas, high pressure', 'location': 'SE', 'reference product': 'natural gas, high pressure'}},
+    'SI':
+        {'share': 0.45,
+         'elect': {'name': 'market for electricity, medium voltage', 'location': 'SI', 'reference product': 'electricity, medium voltage'},
+         'gas': {'name': 'market for natural gas, high pressure', 'location': 'IT', 'reference product': 'natural gas, high pressure'}},
+    'SK':
+        {'share': 2.97,
+         'elect': {'name': 'market for electricity, medium voltage', 'location': 'SK', 'reference product': 'electricity, medium voltage'},
+         'gas': {'name': 'market for natural gas, high pressure', 'location': 'SK', 'reference product': 'natural gas, high pressure'}}
+}
+
+OLD = {'AT': {'share': 4.98, 'elect_code': '6f61d8326ee98b75ab4136e87d0844c6',
                           'gas_code': '8fe71e00ac03aa41e073629a7bd4602e'},
                    'BE': {'share': 4.91, 'elect_code': '44032cfead0bec8f8f01c4303ee2aa2c',
                           'gas_code': '160194493d01c6ba3b3048c2147c9378'},
@@ -214,7 +343,7 @@ steel_data_EU27 = {'AT': {'share': 4.98, 'elect_code': '6f61d8326ee98b75ab4136e8
                           'gas_code': 'e88d630d212aae3e62d77689310ee8de'}}
 
 # Share of secondary steel production (electric furnace)
-secondary_steel = {'other': 0.4162, '2012': 0.4304, '2013': 0.4172, '2014': 0.4080, '2015': 0.4094,
+SECONDARY_STEEL = {'other': 0.4162, '2012': 0.4304, '2013': 0.4172, '2014': 0.4080, '2015': 0.4094,
                    '2016': 0.4058, '2017': 0.4135, '2018': 0.4240, '2019': 0.4191, '2020': 0.4365, '2021': 0.4360}
 
 PRINTED_WARNING_STEEL = False
@@ -240,8 +369,8 @@ cwd = os.getcwd()
 VESTAS_FILE = os.path.join(cwd, 'clean_data.xlsx')
 
 # variables to be set by the user
-PROJECT_NAME = 'repowering'
+PROJECT_NAME = 'jupyter_notebook'
 SPOLD_FILES = r"C:\ecoinvent_data\3.9.1\cutoff\datasets"
-NEW_DB_NAME = 'turbine_examples'
+NEW_DB_NAME = 'test'
 
 
