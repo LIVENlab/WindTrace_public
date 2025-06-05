@@ -9,7 +9,6 @@ from stats_arrays import NormalUncertainty
 from statistics import linear_regression
 import sys
 import consts
-import wurst.searching as ws
 
 
 # TODO: update documentation
@@ -345,7 +344,7 @@ def cabling_materials(turbine_power: float, rotor_diameter: float, number_of_tur
     return cable_mat_mass
 
 
-def mva500_transformer(new_db: bd.Database, cutoff391: bd.Database):
+def mva500_transformer(new_db: bd.Database, cutoff391: bd.Database, ei_index: dict):
     """
     It creates the activity "Power transformer TrafoStar 500 MVA" in the database 'new_db' in brightway2. It returns
     the recently created transformer activity as a variable.
@@ -356,7 +355,8 @@ def mva500_transformer(new_db: bd.Database, cutoff391: bd.Database):
         new_act.save()
 
         # electric steel
-        steel = find_unique_act(database=cutoff391,
+        steel = find_unique_act(index=ei_index,
+                                database=cutoff391,
                                 name='steel production, electric, low-alloyed',
                                 location='Europe without Switzerland and Austria',
                                 reference_product='steel, low-alloyed')
@@ -365,7 +365,8 @@ def mva500_transformer(new_db: bd.Database, cutoff391: bd.Database):
         new_act.save()
 
         # transformer oil
-        oil = find_unique_act(database=cutoff391,
+        oil = find_unique_act(index=ei_index,
+                              database=cutoff391,
                               name='market for lubricating oil',
                               location='RER',
                               reference_product='lubricating oil')
@@ -374,7 +375,8 @@ def mva500_transformer(new_db: bd.Database, cutoff391: bd.Database):
         new_act.save()
 
         # copper
-        copper = find_unique_act(database=cutoff391,
+        copper = find_unique_act(index=ei_index,
+                                 database=cutoff391,
                                  name='market for copper, cathode',
                                  location='GLO',
                                  reference_product='copper, cathode')
@@ -383,7 +385,8 @@ def mva500_transformer(new_db: bd.Database, cutoff391: bd.Database):
         new_act.save()
 
         # insulation
-        insulation = find_unique_act(database=cutoff391,
+        insulation = find_unique_act(index=ei_index,
+                                     database=cutoff391,
                                      name='market for glass wool mat',
                                      location='GLO',
                                      reference_product='glass wool mat')
@@ -392,7 +395,8 @@ def mva500_transformer(new_db: bd.Database, cutoff391: bd.Database):
         new_act.save()
 
         # wood
-        wood = find_unique_act(database=cutoff391,
+        wood = find_unique_act(index=ei_index,
+                               database=cutoff391,
                                name='planing, board, softwood, u=20%',
                                location='CH',
                                reference_product='sawnwood, board, softwood, dried (u=20%), planed')
@@ -401,7 +405,8 @@ def mva500_transformer(new_db: bd.Database, cutoff391: bd.Database):
         new_act.save()
 
         # porcelain
-        porcelain = find_unique_act(database=cutoff391,
+        porcelain = find_unique_act(index=ei_index,
+                                    database=cutoff391,
                                     name='market for ceramic tile',
                                     location='GLO',
                                     reference_product='ceramic tile')
@@ -410,7 +415,8 @@ def mva500_transformer(new_db: bd.Database, cutoff391: bd.Database):
         new_act.save()
 
         # construction steel
-        c_steel = find_unique_act(database=cutoff391,
+        c_steel = find_unique_act(index=ei_index,
+                                  database=cutoff391,
                                   name='market for steel, unalloyed',
                                   location='GLO',
                                   reference_product='steel, unalloyed')
@@ -419,7 +425,8 @@ def mva500_transformer(new_db: bd.Database, cutoff391: bd.Database):
         new_act.save()
 
         # paint
-        paint = find_unique_act(database=cutoff391,
+        paint = find_unique_act(index=ei_index,
+                                database=cutoff391,
                                 name='market for electrostatic paint',
                                 location='GLO',
                                 reference_product='electrostatic paint')
@@ -428,7 +435,8 @@ def mva500_transformer(new_db: bd.Database, cutoff391: bd.Database):
         new_act.save()
 
         # electricity, medium
-        elec = find_unique_act(database=cutoff391,
+        elec = find_unique_act(index=ei_index,
+                               database=cutoff391,
                                name='market for electricity, medium voltage',
                                location='SE',
                                reference_product='electricity, medium voltage')
@@ -437,7 +445,8 @@ def mva500_transformer(new_db: bd.Database, cutoff391: bd.Database):
         new_act.save()
 
         # heat
-        heat = find_unique_act(database=cutoff391,
+        heat = find_unique_act(index=ei_index,
+                               database=cutoff391,
                                name='heat, from municipal waste incineration to generic market for heat district or industrial, other than natural gas',
                                location='SE',
                                reference_product='heat, district or industrial, other than natural gas')
@@ -454,7 +463,7 @@ def mva500_transformer(new_db: bd.Database, cutoff391: bd.Database):
     return transformer
 
 
-def manipulate_steel_activities(new_db: bd.Database, cutoff391: bd.Database, commissioning_year: int,
+def manipulate_steel_activities(new_db: bd.Database, cutoff391: bd.Database, ei_index: dict, commissioning_year: int,
                                 recycled_share: float = None,
                                 electricity_mix: Optional[Literal['Europe', 'Poland', 'Norway']] = None,
                                 printed_warning: bool = False):
@@ -528,12 +537,14 @@ def manipulate_steel_activities(new_db: bd.Database, cutoff391: bd.Database, com
 
     if steel_act_check == 0:
         # find recycled steel production activity in Ecoinvent
-        recycled_ei = find_unique_act(database=cutoff391,
+        recycled_ei = find_unique_act(index=ei_index,
+                                      database=cutoff391,
                                       name='steel production, electric, low-alloyed',
                                       location='Europe without Switzerland and Austria',
                                       reference_product='steel, low-alloyed')
         # find primary steel production activity in Ecoinvent
-        primary_ei = find_unique_act(database=cutoff391,
+        primary_ei = find_unique_act(index=ei_index,
+                                     database=cutoff391,
                                      name='steel production, converter, low-alloyed',
                                      location='RER',
                                      reference_product='steel, low-alloyed')
@@ -563,16 +574,18 @@ def manipulate_steel_activities(new_db: bd.Database, cutoff391: bd.Database, com
             # from the original Ecoinvent activity. The only main change is the share of each country.
             if electricity_mix is None:
                 for country in consts.STEEL_DATA_EU27.keys():
-                    elect_act = [
-                        a for a in cutoff391 if
-                        a['name'] == consts.STEEL_DATA_EU27[country]['elect']['name'] and
-                        a['location'] == consts.STEEL_DATA_EU27[country]['elect']['location'] and
-                        a['reference product'] == consts.STEEL_DATA_EU27[country]['elect']['reference product']][0]
-                    gas_act = [
-                        a for a in cutoff391 if
-                        a['name'] == consts.STEEL_DATA_EU27[country]['gas']['name'] and
-                        a['location'] == consts.STEEL_DATA_EU27[country]['gas']['location'] and
-                        a['reference product'] == consts.STEEL_DATA_EU27[country]['gas']['reference product']][0]
+                    elect_act = find_unique_act(index=ei_index,
+                                                database=cutoff391,
+                                                name=consts.STEEL_DATA_EU27[country]['elect']['name'],
+                                                location=consts.STEEL_DATA_EU27[country]['elect']['location'],
+                                                reference_product=consts.STEEL_DATA_EU27[country]['elect'][
+                                                    'reference product'])
+                    gas_act = find_unique_act(index=ei_index,
+                                              database=cutoff391,
+                                              name=consts.STEEL_DATA_EU27[country]['gas']['name'],
+                                              location=consts.STEEL_DATA_EU27[country]['gas']['location'],
+                                              reference_product=consts.STEEL_DATA_EU27[country]['gas']
+                                              ['reference product'])
                     elect_amount = total_elect_amount * consts.STEEL_DATA_EU27[country]['share'] / 100
                     gas_amount = total_gas_amount * consts.STEEL_DATA_EU27[country]['share'] / 100
                     new_elect_ex = act.new_exchange(input=elect_act, amount=elect_amount, unit='kilowatt hour',
@@ -741,7 +754,7 @@ def manipulate_steel_activities(new_db: bd.Database, cutoff391: bd.Database, com
         print('Something went wrong during the creation of the steel market')
 
 
-def lci_materials(new_db: bd.Database, cutoff391: bd.Database, park_name: str, park_power: float,
+def lci_materials(new_db: bd.Database, cutoff391: bd.Database, ei_index: dict, park_name: str, park_power: float,
                   number_of_turbines: int, park_location: str,
                   park_coordinates: tuple,
                   manufacturer: Literal['Vestas', 'Siemens Gamesa', 'Nordex', 'Enercon', 'LM Wind'],
@@ -855,7 +868,8 @@ def lci_materials(new_db: bd.Database, cutoff391: bd.Database, park_name: str, p
                                                        rotor_diameter=rotor_diameter)
     for material in mass_materials.keys():
         if any(element in material for element in ['Praseodymium', 'Neodymium', 'Dysprosium', 'Terbium', 'Boron']):
-            inp = find_unique_act(database=cutoff391,
+            inp = find_unique_act(index=ei_index,
+                                  database=cutoff391,
                                   name=consts.MATERIALS_EI_ACTIVITY_CODES[material]['name'],
                                   location=consts.MATERIALS_EI_ACTIVITY_CODES[material]['location'],
                                   reference_product=consts.MATERIALS_EI_ACTIVITY_CODES[material]['reference product']
@@ -868,7 +882,7 @@ def lci_materials(new_db: bd.Database, cutoff391: bd.Database, park_name: str, p
                                                   recycled_share=recycled_share_steel,
                                                   electricity_mix=electricity_mix_steel,
                                                   printed_warning=consts.PRINTED_WARNING_STEEL,
-                                                  cutoff391=cutoff391, new_db=new_db)
+                                                  cutoff391=cutoff391, new_db=new_db, ei_index=ei_index)
             consts.PRINTED_WARNING_STEEL = True
             ex = materials_activity.new_exchange(input=inp, type='technosphere', amount=mass_materials[material])
             # Uncertainty added as the standard deviation of the residuals
@@ -884,11 +898,12 @@ def lci_materials(new_db: bd.Database, cutoff391: bd.Database, park_name: str, p
                                                     recycled_share=recycled_share_steel,
                                                     electricity_mix=electricity_mix_steel,
                                                     printed_warning=consts.PRINTED_WARNING_STEEL,
-                                                    new_db=new_db, cutoff391=cutoff391)
+                                                    new_db=new_db, cutoff391=cutoff391, ei_index=ei_index)
             if ch:
                 inp = ch[0]
             else:
-                inp = find_unique_act(database=cutoff391,
+                inp = find_unique_act(index=ei_index,
+                                      database=cutoff391,
                                       name=consts.MATERIALS_EI_ACTIVITY_CODES[material]['name'],
                                       location=consts.MATERIALS_EI_ACTIVITY_CODES[material]['location'],
                                       reference_product=consts.MATERIALS_EI_ACTIVITY_CODES[material][
@@ -903,7 +918,8 @@ def lci_materials(new_db: bd.Database, cutoff391: bd.Database, park_name: str, p
             ex.save()
             materials_activity.save()
         elif material == 'Fiberglass':
-            inp = find_unique_act(database=cutoff391,
+            inp = find_unique_act(index=ei_index,
+                                  database=cutoff391,
                                   name=consts.MATERIALS_EI_ACTIVITY_CODES[material]['name'],
                                   location=consts.MATERIALS_EI_ACTIVITY_CODES[material]['location'],
                                   reference_product=consts.MATERIALS_EI_ACTIVITY_CODES[material][
@@ -920,7 +936,8 @@ def lci_materials(new_db: bd.Database, cutoff391: bd.Database, park_name: str, p
             ex.save()
             materials_activity.save()
         elif material == 'Concrete_foundations':
-            inp = find_unique_act(database=cutoff391,
+            inp = find_unique_act(index=ei_index,
+                                  database=cutoff391,
                                   name=consts.MATERIALS_EI_ACTIVITY_CODES[material]['name'],
                                   location=consts.MATERIALS_EI_ACTIVITY_CODES[material]['location'],
                                   reference_product=consts.MATERIALS_EI_ACTIVITY_CODES[material][
@@ -935,7 +952,8 @@ def lci_materials(new_db: bd.Database, cutoff391: bd.Database, park_name: str, p
             ex.save()
             materials_activity.save()
         else:
-            inp = find_unique_act(database=cutoff391,
+            inp = find_unique_act(index=ei_index,
+                                  database=cutoff391,
                                   name=consts.MATERIALS_EI_ACTIVITY_CODES[material]['name'],
                                   location=consts.MATERIALS_EI_ACTIVITY_CODES[material]['location'],
                                   reference_product=consts.MATERIALS_EI_ACTIVITY_CODES[material][
@@ -956,7 +974,8 @@ def lci_materials(new_db: bd.Database, cutoff391: bd.Database, park_name: str, p
     for material in processing_materials_list:
         if material == 'Low alloy steel':
             # section bar rolling
-            inp = find_unique_act(database=cutoff391,
+            inp = find_unique_act(index=ei_index,
+                                  database=cutoff391,
                                   name=consts.MATERIAL_PROCESSING_EI_ACTIVITY_CODES['Steel_tower_rolling']['name'],
                                   location=consts.MATERIAL_PROCESSING_EI_ACTIVITY_CODES['Steel_tower_rolling'][
                                       'location'],
@@ -967,7 +986,8 @@ def lci_materials(new_db: bd.Database, cutoff391: bd.Database, park_name: str, p
             ex.save()
             manufacturing_activity.save()
             # welding
-            inp = find_unique_act(database=cutoff391,
+            inp = find_unique_act(index=ei_index,
+                                  database=cutoff391,
                                   name=consts.MATERIAL_PROCESSING_EI_ACTIVITY_CODES['Steel_tower_welding']['name'],
                                   location=consts.MATERIAL_PROCESSING_EI_ACTIVITY_CODES['Steel_tower_welding'][
                                       'location'],
@@ -988,7 +1008,8 @@ def lci_materials(new_db: bd.Database, cutoff391: bd.Database, park_name: str, p
             perimeter = np.pi * outer_diameter
             tower_surface_area = perimeter * hub_height
             # create exchange
-            inp = find_unique_act(database=cutoff391,
+            inp = find_unique_act(index=ei_index,
+                                  database=cutoff391,
                                   name=consts.MATERIAL_PROCESSING_EI_ACTIVITY_CODES['Zinc coating']['name'],
                                   location=consts.MATERIAL_PROCESSING_EI_ACTIVITY_CODES['Zinc coating']['location'],
                                   reference_product=consts.MATERIAL_PROCESSING_EI_ACTIVITY_CODES['Zinc coating'][
@@ -999,7 +1020,8 @@ def lci_materials(new_db: bd.Database, cutoff391: bd.Database, park_name: str, p
             manufacturing_activity.save()
         elif 'foundations' in material and 'alloy' not in material:
             material_name = material[:material.index('_')]
-            inp = find_unique_act(database=cutoff391,
+            inp = find_unique_act(index=ei_index,
+                                  database=cutoff391,
                                   name=consts.MATERIAL_PROCESSING_EI_ACTIVITY_CODES[material_name]['name'],
                                   location=consts.MATERIAL_PROCESSING_EI_ACTIVITY_CODES[material_name]['location'],
                                   reference_product=consts.MATERIAL_PROCESSING_EI_ACTIVITY_CODES[material_name][
@@ -1009,7 +1031,8 @@ def lci_materials(new_db: bd.Database, cutoff391: bd.Database, park_name: str, p
             ex.save()
             manufacturing_activity.save()
         elif 'foundations' in material and 'alloy' in material:
-            inp = find_unique_act(database=cutoff391,
+            inp = find_unique_act(index=ei_index,
+                                  database=cutoff391,
                                   name=consts.MATERIAL_PROCESSING_EI_ACTIVITY_CODES['Steel_tower_rolling']['name'],
                                   location=consts.MATERIAL_PROCESSING_EI_ACTIVITY_CODES['Steel_tower_rolling'][
                                       'location'],
@@ -1020,7 +1043,8 @@ def lci_materials(new_db: bd.Database, cutoff391: bd.Database, park_name: str, p
             ex.save()
             manufacturing_activity.save()
         else:
-            inp = find_unique_act(database=cutoff391,
+            inp = find_unique_act(index=ei_index,
+                                  database=cutoff391,
                                   name=consts.MATERIAL_PROCESSING_EI_ACTIVITY_CODES[material]['name'],
                                   location=consts.MATERIAL_PROCESSING_EI_ACTIVITY_CODES[material]['location'],
                                   reference_product=consts.MATERIAL_PROCESSING_EI_ACTIVITY_CODES[material][
@@ -1056,7 +1080,8 @@ def lci_materials(new_db: bd.Database, cutoff391: bd.Database, park_name: str, p
     # add materials from the cables
     cable_mass = cabling_materials(turbine_power, rotor_diameter, number_of_turbines)
     for material in cable_mass.keys():
-        inp = find_unique_act(database=cutoff391,
+        inp = find_unique_act(index=ei_index,
+                              database=cutoff391,
                               name=consts.MATERIALS_EI_ACTIVITY_CODES[material]['name'],
                               location=consts.MATERIALS_EI_ACTIVITY_CODES[material]['location'],
                               reference_product=consts.MATERIALS_EI_ACTIVITY_CODES[material]['reference product']
@@ -1069,7 +1094,8 @@ def lci_materials(new_db: bd.Database, cutoff391: bd.Database, park_name: str, p
     for material in processing_materials_list:
         if material == 'Aluminium_cables':
             # copper wire drawing
-            inp = find_unique_act(database=cutoff391,
+            inp = find_unique_act(index=ei_index,
+                                  database=cutoff391,
                                   name=consts.MATERIAL_PROCESSING_EI_ACTIVITY_CODES['Copper']['name'],
                                   location=consts.MATERIAL_PROCESSING_EI_ACTIVITY_CODES['Copper']['location'],
                                   reference_product=consts.MATERIAL_PROCESSING_EI_ACTIVITY_CODES['Copper'][
@@ -1079,7 +1105,8 @@ def lci_materials(new_db: bd.Database, cutoff391: bd.Database, park_name: str, p
             ex.save()
             cables_act.save()
         else:
-            inp = find_unique_act(database=cutoff391,
+            inp = find_unique_act(index=ei_index,
+                                  database=cutoff391,
                                   name=consts.MATERIAL_PROCESSING_EI_ACTIVITY_CODES[material]['name'],
                                   location=consts.MATERIAL_PROCESSING_EI_ACTIVITY_CODES[material]['location'],
                                   reference_product=consts.MATERIAL_PROCESSING_EI_ACTIVITY_CODES[material][
@@ -1112,7 +1139,7 @@ def lci_materials(new_db: bd.Database, cutoff391: bd.Database, park_name: str, p
     cables_ex.save()
 
     # add materials from the transformer (downscaled from 500MVA to the park power)
-    transformer = mva500_transformer(cutoff391=cutoff391, new_db=new_db)
+    transformer = mva500_transformer(cutoff391=cutoff391, new_db=new_db, ei_index=ei_index)
     transformer_ex = park_act.new_exchange(input=transformer, type='technosphere', amount=park_power / 500)
     transformer_ex.save()
 
@@ -1131,7 +1158,7 @@ def lci_materials(new_db: bd.Database, cutoff391: bd.Database, park_name: str, p
     return total_mass_turbines
 
 
-def end_of_life(new_db: bd.Database, cutoff391: bd.Database, scenario: int, park_name: str,
+def end_of_life(new_db: bd.Database, cutoff391: bd.Database, ei_index: dict, scenario: int, park_name: str,
                 generator_type: Literal['dd_eesg', 'dd_pmsg', 'gb_pmsg', 'gb_dfig'],
                 turbine_power: float, hub_height: float, rotor_diameter: float, include_life_cycle_stages: bool = True,
                 regression_adjustment: Literal['D2h', 'Hub height'] = 'D2h'):
@@ -1173,7 +1200,8 @@ def end_of_life(new_db: bd.Database, cutoff391: bd.Database, scenario: int, park
             # scenario == 3
             else:
                 recycling_rate = 0.52
-            inp = find_unique_act(database=cutoff391,
+            inp = find_unique_act(index=ei_index,
+                                  database=cutoff391,
                                   name=consts.EOL_EI_ACTIVITY_CODES[material]['landfill']['name'],
                                   location=consts.EOL_EI_ACTIVITY_CODES[material]['landfill']['location'],
                                   reference_product=consts.EOL_EI_ACTIVITY_CODES[material]['landfill'][
@@ -1191,7 +1219,8 @@ def end_of_life(new_db: bd.Database, cutoff391: bd.Database, scenario: int, park
             # scenario == 3
             else:
                 recycling_rate = 0.42
-            inp = find_unique_act(database=cutoff391,
+            inp = find_unique_act(index=ei_index,
+                                  database=cutoff391,
                                   name=consts.EOL_EI_ACTIVITY_CODES[material]['landfill']['name'],
                                   location=consts.EOL_EI_ACTIVITY_CODES[material]['landfill']['location'],
                                   reference_product=consts.EOL_EI_ACTIVITY_CODES[material]['landfill'][
@@ -1209,7 +1238,8 @@ def end_of_life(new_db: bd.Database, cutoff391: bd.Database, scenario: int, park
             # secenario == 3
             else:
                 recycling_rate = 0.42
-            inp = find_unique_act(database=cutoff391,
+            inp = find_unique_act(index=ei_index,
+                                  database=cutoff391,
                                   name=consts.EOL_EI_ACTIVITY_CODES[material]['landfill']['name'],
                                   location=consts.EOL_EI_ACTIVITY_CODES[material]['landfill']['location'],
                                   reference_product=consts.EOL_EI_ACTIVITY_CODES[material]['landfill'][
@@ -1229,7 +1259,8 @@ def end_of_life(new_db: bd.Database, cutoff391: bd.Database, scenario: int, park
             # scenario == 4
             else:
                 recycling_rate = 0.7
-            inp = find_unique_act(database=cutoff391,
+            inp = find_unique_act(index=ei_index,
+                                  database=cutoff391,
                                   name=consts.EOL_EI_ACTIVITY_CODES[material]['landfill']['name'],
                                   location=consts.EOL_EI_ACTIVITY_CODES[material]['landfill']['location'],
                                   reference_product=consts.EOL_EI_ACTIVITY_CODES[material]['landfill'][
@@ -1240,7 +1271,8 @@ def end_of_life(new_db: bd.Database, cutoff391: bd.Database, scenario: int, park
             ex.save()
             eol_activity.save()
         elif any(element in material for element in plastics):
-            inp = find_unique_act(database=cutoff391,
+            inp = find_unique_act(index=ei_index,
+                                  database=cutoff391,
                                   name=consts.EOL_EI_ACTIVITY_CODES[material]['incineration']['name'],
                                   location=consts.EOL_EI_ACTIVITY_CODES[material]['incineration']['location'],
                                   reference_product=consts.EOL_EI_ACTIVITY_CODES[material]['incineration'][
@@ -1253,7 +1285,8 @@ def end_of_life(new_db: bd.Database, cutoff391: bd.Database, scenario: int, park
             # NOTE: 10% of glassfiber mass corresponds to the extra mass on the manufacturing process (i.e., waste)
             # and the waste is not accounted in here.
             if scenario == 4:
-                inp = find_unique_act(database=cutoff391,
+                inp = find_unique_act(index=ei_index,
+                                      database=cutoff391,
                                       name=consts.EOL_EI_ACTIVITY_CODES[material]['incineration']['name'],
                                       location=consts.EOL_EI_ACTIVITY_CODES[material]['incineration']['location'],
                                       reference_product=consts.EOL_EI_ACTIVITY_CODES[material]['incineration'][
@@ -1263,7 +1296,8 @@ def end_of_life(new_db: bd.Database, cutoff391: bd.Database, scenario: int, park
                 ex.save()
                 eol_activity.save()
             else:
-                inp = find_unique_act(database=cutoff391,
+                inp = find_unique_act(index=ei_index,
+                                      database=cutoff391,
                                       name=consts.EOL_EI_ACTIVITY_CODES[material]['incineration']['name'],
                                       location=consts.EOL_EI_ACTIVITY_CODES[material]['incineration']['location'],
                                       reference_product=consts.EOL_EI_ACTIVITY_CODES[material]['incineration'][
@@ -1273,7 +1307,8 @@ def end_of_life(new_db: bd.Database, cutoff391: bd.Database, scenario: int, park
                 ex.save()
                 eol_activity.save()
         elif any(element in material for element in ['Lubricating oil', 'Ethyleneglycol']):
-            inp = find_unique_act(database=cutoff391,
+            inp = find_unique_act(index=ei_index,
+                                  database=cutoff391,
                                   name=consts.EOL_EI_ACTIVITY_CODES[material]['incineration']['name'],
                                   location=consts.EOL_EI_ACTIVITY_CODES[material]['incineration']['location'],
                                   reference_product=consts.EOL_EI_ACTIVITY_CODES[material]['incineration'][
@@ -1286,7 +1321,8 @@ def end_of_life(new_db: bd.Database, cutoff391: bd.Database, scenario: int, park
             # concrete modelled separatelly because the amount is in m3 and the landfill activity in kg
             # we use the density (2400 kg/m3)
             if scenario == 4:
-                inp = find_unique_act(database=cutoff391,
+                inp = find_unique_act(index=ei_index,
+                                      database=cutoff391,
                                       name=consts.EOL_EI_ACTIVITY_CODES[material]['landfill']['name'],
                                       location=consts.EOL_EI_ACTIVITY_CODES[material]['landfill']['location'],
                                       reference_product=consts.EOL_EI_ACTIVITY_CODES[material]['landfill'][
@@ -1297,7 +1333,8 @@ def end_of_life(new_db: bd.Database, cutoff391: bd.Database, scenario: int, park
                 ex.save()
                 eol_activity.save()
             else:
-                inp = find_unique_act(database=cutoff391,
+                inp = find_unique_act(index=ei_index,
+                                      database=cutoff391,
                                       name=consts.EOL_EI_ACTIVITY_CODES[material]['landfill']['name'],
                                       location=consts.EOL_EI_ACTIVITY_CODES[material]['landfill']['location'],
                                       reference_product=consts.EOL_EI_ACTIVITY_CODES[material]['landfill'][
@@ -1309,7 +1346,8 @@ def end_of_life(new_db: bd.Database, cutoff391: bd.Database, scenario: int, park
                 eol_activity.save()
         else:
             if scenario == 4:
-                inp = find_unique_act(database=cutoff391,
+                inp = find_unique_act(index=ei_index,
+                                      database=cutoff391,
                                       name=consts.EOL_EI_ACTIVITY_CODES[material]['landfill']['name'],
                                       location=consts.EOL_EI_ACTIVITY_CODES[material]['landfill']['location'],
                                       reference_product=consts.EOL_EI_ACTIVITY_CODES[material]['landfill'][
@@ -1319,7 +1357,8 @@ def end_of_life(new_db: bd.Database, cutoff391: bd.Database, scenario: int, park
                 ex.save()
                 eol_activity.save()
             else:
-                inp = find_unique_act(database=cutoff391,
+                inp = find_unique_act(index=ei_index,
+                                      database=cutoff391,
                                       name=consts.EOL_EI_ACTIVITY_CODES[material]['landfill']['name'],
                                       location=consts.EOL_EI_ACTIVITY_CODES[material]['landfill']['location'],
                                       reference_product=consts.EOL_EI_ACTIVITY_CODES[material]['landfill'][
@@ -1334,7 +1373,7 @@ def end_of_life(new_db: bd.Database, cutoff391: bd.Database, scenario: int, park
         eol_ex.save()
 
 
-def maintenance(new_db: bd.Database, cutoff391: bd.Database, park_name: str,
+def maintenance(new_db: bd.Database, cutoff391: bd.Database, ei_index: dict, park_name: str,
                 generator_type: Literal['dd_eesg', 'dd_pmsg', 'gb_pmsg', 'gb_dfig'],
                 turbine_power: float, hub_height: float, lifetime: int, rotor_diameter: float,
                 include_life_cycle_stages: bool = True,
@@ -1352,7 +1391,8 @@ def maintenance(new_db: bd.Database, cutoff391: bd.Database, park_name: str,
     else:
         om_activity = turbine_act
     # Inspection trips
-    inp = find_unique_act(database=cutoff391,
+    inp = find_unique_act(index=ei_index,
+                          database=cutoff391,
                           name='transport, passenger car, large size, diesel, EURO 4',
                           location='RER',
                           reference_product='transport, passenger car, large size, diesel, EURO 4'
@@ -1365,7 +1405,8 @@ def maintenance(new_db: bd.Database, cutoff391: bd.Database, park_name: str,
     mass_materials, m_poly = materials_mass(generator_type=generator_type,
                                             turbine_power=turbine_power, hub_height=hub_height,
                                             regression_adjustment=regression_adjustment, rotor_diameter=rotor_diameter)
-    inp = find_unique_act(database=cutoff391,
+    inp = find_unique_act(index=ei_index,
+                          database=cutoff391,
                           name='market for lubricating oil',
                           location='RER',
                           reference_product='lubricating oil'
@@ -1374,7 +1415,8 @@ def maintenance(new_db: bd.Database, cutoff391: bd.Database, park_name: str,
                                   amount=mass_materials['Lubricating oil'] * (lifetime / 2))
     ex.save()
     om_activity.save()
-    inp = find_unique_act(database=cutoff391,
+    inp = find_unique_act(index=ei_index,
+                          database=cutoff391,
                           name='treatment of waste mineral oil, hazardous waste incineration, with energy recovery',
                           location='Europe without Switzerland',
                           reference_product='waste mineral oil'
@@ -1389,7 +1431,7 @@ def maintenance(new_db: bd.Database, cutoff391: bd.Database, park_name: str,
         om_ex.save()
 
 
-def transport(new_db: bd.Database, cutoff391: bd.Database,
+def transport(new_db: bd.Database, cutoff391: bd.Database, ei_index: dict,
               manufacturer: Literal['Vestas', 'Siemens Gamesa', 'Nordex', 'ENERCON', 'LM Wind'],
               park_coordinates: tuple, park_name: str, rotor_diameter: float,
               generator_type: Optional[Literal['dd_eesg', 'dd_pmsg', 'gb_pmsg', 'gb_dfig']], turbine_power: float,
@@ -1431,7 +1473,8 @@ def transport(new_db: bd.Database, cutoff391: bd.Database,
             others_amount = (sum(mat_mass.values()) - mat_mass['Concrete_foundations']
                              - mat_mass['Low alloy steel']) / 1000 * min(distance_dict.keys())
 
-    truck_trans = find_unique_act(database=cutoff391,
+    truck_trans = find_unique_act(index=ei_index,
+                                  database=cutoff391,
                                   name='market for transport, freight, lorry >32 metric ton, EURO6',
                                   location='RER',
                                   reference_product='transport, freight, lorry >32 metric ton, EURO6'
@@ -1601,7 +1644,7 @@ def land_use(new_db: bd.Database, biosphere3: bd.Database, turbine_power: float,
     return transformation_flows, occupation_flows
 
 
-def auxiliary_road_materials(new_db: bd.Database, cutoff391: bd.Database,
+def auxiliary_road_materials(new_db: bd.Database, cutoff391: bd.Database, ei_index: dict,
                              turbine_power: float, park_name: str, include_life_cycle_stages: bool = True):
     """
     Adds the auxiliary road materials (exchange with: market for road) to the lci.
@@ -1628,7 +1671,8 @@ def auxiliary_road_materials(new_db: bd.Database, cutoff391: bd.Database,
     road_act_in_new_db = new_db.search('road construction')
 
     if not road_act_in_new_db:
-        road_act = find_unique_act(database=cutoff391,
+        road_act = find_unique_act(index=ei_index,
+                                   database=cutoff391,
                                    name='road construction',
                                    location='RoW',
                                    reference_product='road'
@@ -1652,7 +1696,7 @@ def auxiliary_road_materials(new_db: bd.Database, cutoff391: bd.Database,
     new_exc.save()
 
 
-def excavation_activities(new_db: bd.Database, cutoff391: bd.Database,
+def excavation_activities(new_db: bd.Database, cutoff391: bd.Database, ei_index: dict,
                           generator_type: Literal['dd_eesg', 'dd_pmsg', 'gb_pmsg', 'gb_dfig'],
                           turbine_power: float, hub_height: float, rotor_diameter: float,
                           number_of_turbines: int, park_name: str, include_life_cycle_stages: bool = True,
@@ -1680,7 +1724,8 @@ def excavation_activities(new_db: bd.Database, cutoff391: bd.Database,
     cabling_volume = 1.1 * 0.85 * cable_length
 
     # define brightway activities
-    digger_act = find_unique_act(database=cutoff391,
+    digger_act = find_unique_act(index=ei_index,
+                                 database=cutoff391,
                                  name='excavation, hydraulic digger',
                                  location='RER',
                                  reference_product='excavation, hydraulic digger'
@@ -1793,6 +1838,7 @@ def lci_wind_turbine(new_db: bd.Database, cutoff391: bd.Database, biosphere3: bd
                    f'land_cover_type: {land_cover_type}, eol_scenario: {eol_scenario}, cf: {cf * 100} %, '
                    f'annual attrition rate: {time_adjusted_cf}'
                    )
+    ei_index = build_bw_index(cutoff391)
     mass_materials_park = lci_materials(park_name=park_name, park_power=park_power,
                                         number_of_turbines=number_of_turbines,
                                         park_location=park_location, park_coordinates=park_coordinates,
@@ -1805,13 +1851,13 @@ def lci_wind_turbine(new_db: bd.Database, cutoff391: bd.Database, biosphere3: bd
                                         hub_height=hub_height, commissioning_year=commissioning_year,
                                         include_life_cycle_stages=include_life_cycle_stages, comment=comment,
                                         regression_adjustment=regression_adjustment,
-                                        new_db=new_db, cutoff391=cutoff391)
+                                        new_db=new_db, cutoff391=cutoff391, ei_index=ei_index)
     if transportation:
         transport(manufacturer=manufacturer, park_coordinates=park_coordinates, park_name=park_name,
                   generator_type=generator_type, turbine_power=turbine_power, hub_height=hub_height,
                   include_life_cycle_stages=include_life_cycle_stages, regression_adjustment=regression_adjustment,
                   rotor_diameter=rotor_diameter,
-                  new_db=new_db, cutoff391=cutoff391)
+                  new_db=new_db, cutoff391=cutoff391, ei_index=ei_index)
     if installation and not land_cover_type:
         trans, occ = land_use(turbine_power=turbine_power, park_name=park_name,
                               include_life_cycle_stages=include_life_cycle_stages, lifetime=lifetime,
@@ -1819,12 +1865,12 @@ def lci_wind_turbine(new_db: bd.Database, cutoff391: bd.Database, biosphere3: bd
                               biosphere3=biosphere3, new_db=new_db)
         auxiliary_road_materials(turbine_power=turbine_power, park_name=park_name,
                                  include_life_cycle_stages=include_life_cycle_stages,
-                                 new_db=new_db, cutoff391=cutoff391)
+                                 new_db=new_db, cutoff391=cutoff391, ei_index=ei_index)
         excavation_activities(generator_type=generator_type, turbine_power=turbine_power, hub_height=hub_height,
                               rotor_diameter=rotor_diameter, number_of_turbines=number_of_turbines, park_name=park_name,
                               include_life_cycle_stages=include_life_cycle_stages,
                               regression_adjustment=regression_adjustment,
-                              new_db=new_db, cutoff391=cutoff391)
+                              new_db=new_db, cutoff391=cutoff391, ei_index=ei_index)
     elif installation and land_cover_type:
         trans, occ = land_use(turbine_power=turbine_power, park_name=park_name, manual_land_cover=land_cover_type,
                               include_life_cycle_stages=include_life_cycle_stages, lifetime=lifetime,
@@ -1832,23 +1878,23 @@ def lci_wind_turbine(new_db: bd.Database, cutoff391: bd.Database, biosphere3: bd
                               biosphere3=biosphere3, new_db=new_db)
         auxiliary_road_materials(turbine_power=turbine_power, park_name=park_name,
                                  include_life_cycle_stages=include_life_cycle_stages,
-                                 new_db=new_db, cutoff391=cutoff391)
+                                 new_db=new_db, cutoff391=cutoff391, ei_index=ei_index)
         excavation_activities(generator_type=generator_type, turbine_power=turbine_power, hub_height=hub_height,
                               rotor_diameter=rotor_diameter, number_of_turbines=number_of_turbines, park_name=park_name,
                               include_life_cycle_stages=include_life_cycle_stages,
                               regression_adjustment=regression_adjustment,
-                              new_db=new_db, cutoff391=cutoff391)
+                              new_db=new_db, cutoff391=cutoff391, ei_index=ei_index)
     if use_and_maintenance:
         maintenance(park_name=park_name, generator_type=generator_type, turbine_power=turbine_power,
                     hub_height=hub_height, include_life_cycle_stages=include_life_cycle_stages, lifetime=lifetime,
                     regression_adjustment=regression_adjustment, rotor_diameter=rotor_diameter,
-                    new_db=new_db, cutoff391=cutoff391)
+                    new_db=new_db, cutoff391=cutoff391, ei_index=ei_index)
     if eol:
         end_of_life(scenario=eol_scenario, park_name=park_name, generator_type=generator_type,
                     turbine_power=turbine_power,
                     hub_height=hub_height, include_life_cycle_stages=include_life_cycle_stages,
                     regression_adjustment=regression_adjustment, rotor_diameter=rotor_diameter,
-                    new_db=new_db, cutoff391=cutoff391)
+                    new_db=new_db, cutoff391=cutoff391,ei_index=ei_index)
 
     # Create electricity_production activity per turbine and per park (per kWh)
     try:
@@ -1977,13 +2023,17 @@ def lca_wind_turbine(new_db: bd.Database,
     return results, results_kwh
 
 
-def find_unique_act(database: bd.Database, name: str, location: str, reference_product: str):
-    return ws.get_one(
-        database,
-        ws.equals('name', name),
-        ws.equals('location', location),
-        ws.equals('reference product', reference_product)
-    )
+def find_unique_act(index: dict, database: bd.Database, name: str, location: str, reference_product: str):
+    key = index.get((name, location, reference_product))
+    return database.get(key[1])
+
+
+def build_bw_index(database: bd.Database):
+    data = database.load()
+    return {
+        (v['name'], v['location'], v['reference product']): k
+        for k, v in data.items()
+    }
 
 
 pass
