@@ -597,11 +597,12 @@ def manipulate_steel_activities(new_db: bd.Database, cutoff391: bd.Database, ei_
             else:
                 # gas is always changed independently of the electricity mix chosen
                 for country in consts.STEEL_DATA_EU27.keys():
-                    gas_act = [
-                        a for a in cutoff391 if
-                        a['name'] == consts.STEEL_DATA_EU27[country]['gas']['name'] and
-                        a['location'] == consts.STEEL_DATA_EU27[country]['gas']['location'] and
-                        a['reference product'] == consts.STEEL_DATA_EU27[country]['gas']['reference product']][0]
+                    gas_act = find_unique_act(index=ei_index,
+                                              database=cutoff391,
+                                              name=consts.STEEL_DATA_EU27[country]['gas']['name'],
+                                              location=consts.STEEL_DATA_EU27[country]['gas']['location'],
+                                              reference_product=consts.STEEL_DATA_EU27[country]['gas']
+                                              ['reference product'])
                     gas_amount = total_gas_amount * consts.STEEL_DATA_EU27[country]['share'] / 100
                     new_gas_ex = act.new_exchange(input=gas_act, amount=gas_amount, unit='cubic meter',
                                                   type='technosphere')
