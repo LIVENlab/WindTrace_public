@@ -1,157 +1,511 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import scipy
+import consts
 import bw2data as bd
 from geopy.distance import geodesic
 import random
-from typing import Optional, List, Literal, Tuple
-from stats_arrays import NormalUncertainty
-from statistics import linear_regression
+from typing import Optional, List, Literal, Tuple, Dict
+from stats_arrays import NormalUncertainty, UniformUncertainty
 import sys
-import consts
+
+def test_normal(residuals: np.array, material: str, print_acceptance: bool) -> bool:
+    """Tests if residuals follow a normal distribution using Shapiro-Wilk test."""
+    if residuals.size < 3:  # Shapiro-Wilk requires at least 3 data points
+        print(f"Skipping Normality test for {material}: Not enough data points ({residuals.size}).")
+        return False
+    stat, p_value = scipy.stats.shapiro(residuals)
+    if p_value > 0.05:
+        if print_acceptance:
+            print(f"Normality test for {material}: Accepted (p={p_value:.3f})")
+        return True
+    if print_acceptance:
+        print(f"Normality test for {material}: Declined (p={p_value:.3f})")
+    return False
 
 
-# TODO: update documentation
-# TODO: do a few tests on the new material_mass functions
+def test_lognormal(residuals: np.array, material: str, print_acceptance: bool) -> bool:
+    """Tests if residuals follow a lognormal distribution."""
+    # Add small offset to ensure positive values for log transformation
+    adjusted_residuals = residuals - np.min(residuals) + 1e-9
+    # If all adjusted residuals are effectively zero or negative after adjustment, skip
+    if np.any(adjusted_residuals <= 0) or adjusted_residuals.size < 3:
+        print(f"Skipping Lognormality test for {material}: Invalid or insufficient data for log transformation.")
+        return False
+
+    log_residuals = np.log(adjusted_residuals)
+    stat, p_value = scipy.stats.shapiro(log_residuals)
+    if p_value > 0.05:
+        if print_acceptance:
+            print(f"Lognormality test for {material}: Accepted (p={p_value:.3f})")
+        return True
+    if print_acceptance:
+        print(f"Lognormality test for {material}: Declined (p={p_value:.3f})")
+    return False
+
+
+def test_triangular(residuals: np.array, material: str, print_acceptance: bool) -> bool:
+    """Tests if residuals follow a triangular distribution using Kolmogorov-Smirnov test."""
+    if residuals.size < 2:
+        print(f"Skipping Triangular test for {material}: Not enough data points ({residuals.size}).")
+        return False
+    min_res = np.min(residuals)
+    max_res = np.max(residuals)
+    if min_res == max_res:  # Cannot fit a triangular distribution with zero range
+        print(f"Skipping Triangular test for {material}: Residual range is zero.")
+        return False
+    c = (min_res + max_res) / 2  # Mode at midpoint
+    loc = min_res
+    scale = max_res - min_res
+    _, p_value = scipy.stats.kstest(residuals, 'triang', args=((c - loc) / scale, loc, scale))
+    if p_value > 0.05:
+        if print_acceptance:
+            print(f"Triangular test for {material}: Accepted (p={p_value:.3f})")
+        return True
+    if print_acceptance:
+        print(f"Triangular test for {material}: Declined (p={p_value:.3f})")
+    return False
+
+
+def test_uniform(residuals: np.array, material: str, print_acceptance: bool) -> bool:
+    """Tests if residuals follow a uniform distribution using Kolmogorov-Smirnov test."""
+    if residuals.size < 2:
+        print(f"Skipping Uniform test for {material}: Not enough data points ({residuals.size}).")
+        return False
+    min_res = np.min(residuals)
+    max_res = np.max(residuals)
+    if min_res == max_res:  # Cannot fit a uniform distribution with zero range
+        print(f"Skipping Uniform test for {material}: Residual range is zero.")
+        return False
+    _, p_value = scipy.stats.kstest(residuals, 'uniform', args=(min_res, max_res - min_res))
+    if p_value > 0.05:
+        if print_acceptance:
+            print(f"Uniform test for {material}: Accepted (p={p_value:.3f})")
+        return True
+    if print_acceptance:
+        print(f"Uniform test for {material}: Declined (p={p_value:.3f})")
+    return False
+
+
+def test_residual_distributions(residuals: np.array, material: str, print_acceptance: bool = False) -> str:
+    """Tests residuals against common distributions and returns the best fit."""
+    # Ensure residuals are not empty
+    if residuals.size == 0:
+        print(f"No residuals to test for {material}.")
+        return 'none'
+
+    # Test distributions in order of preference
+    if test_normal(residuals, material, print_acceptance):
+        return 'normal'
+    if test_lognormal(residuals, material, print_acceptance):
+        return 'lognormal'
+    if test_triangular(residuals, material, print_acceptance):
+        return 'triangular'
+    if test_uniform(residuals, material, print_acceptance):
+        return 'uniform'
+    print(f"No accepted distribution for {material} residuals.")
+    return 'none'
+
+
+def statistical_results(residuals: np.array) -> Tuple[float, float, float]:
+    """Calculates confidence interval, standard deviation, and variance from residuals."""
+    if residuals.size == 0:
+        return np.nan, np.nan, np.nan
+    std_error = np.sqrt(np.mean(residuals ** 2))
+    confidence = 1.96 * std_error  # 95% confidence interval multiplier (for large n)
+    residual_variance = np.mean(residuals ** 2)
+    residual_std_dev = np.sqrt(residual_variance)
+    return confidence, residual_std_dev, residual_variance
+
+
+def fit_model(x: np.array, y: np.array, material_name: str,
+              proportional: bool = False) -> Dict:
+    """
+    Fits a linear regression model, calculates statistics, and tests residual distributions.
+    Returns a dictionary with 'polyfit', 'confidence_95%', 'std_dev', and 'residual_distribution'.
+    Includes robustness checks for insufficient or degenerate data.
+    """
+    if len(x) < 2 or len(y) < 2:
+        print(
+            f"Warning: Not enough valid data points ({len(x)}) to fit model for {material_name}. Returning dummy model.")
+        return {
+            'polyfit': np.poly1d([0]),
+            'confidence_95%': np.nan,
+            'std_dev': np.nan,
+            'residual_distribution': 'none'
+        }
+
+    poly = None
+    if proportional:
+        if np.sum(x ** 2) == 0:  # Avoid division by zero
+            slope = 0
+        else:
+            slope = np.sum(x * y) / np.sum(x ** 2)
+        poly = np.poly1d([slope, 0])  # y = mx + 0
+    else:
+        try:
+            poly = np.poly1d(np.polyfit(x, y, 1))  # y = mx + b
+        except np.linalg.LinAlgError:
+            print(
+                f"Warning: Linear algebra error during polyfit for {material_name}. Data might be degenerate (e.g., all x values identical). Returning mean as constant model.")
+            poly = np.poly1d([np.mean(y)])  # Fallback to a constant model (mean of y)
+        except Exception as e:
+            print(
+                f"Warning: An unexpected error occurred during polyfit for {material_name}: {e}. Returning dummy model.")
+            poly = np.poly1d([0])  # Fallback to a constant zero model
+
+    if poly is None:  # Safeguard
+        poly = np.poly1d([0])
+
+    # Calculate residuals. Ensure poly is callable and x is not empty.
+    residuals = np.array([])
+    if len(x) > 0 and isinstance(poly, np.poly1d):
+        try:
+            residuals = y - poly(x)
+        except Exception as e:
+            print(f"Error calculating residuals for {material_name}: {e}. Residuals will be empty.")
+            residuals = np.array([])
+
+    # Perform statistical tests and calculations only if residuals are available
+    if residuals.size == 0:
+        dist_type = 'none'
+        confidence = np.nan
+        std_dev = np.nan
+        residual_variance = np.nan
+    else:
+        dist_type = test_residual_distributions(residuals, material_name)
+        if dist_type == 'lognormal':
+            # Apply log transformation for statistical results if distribution is lognormal
+            adjusted_residuals = residuals - np.min(residuals) + 1e-9
+            if adjusted_residuals.size > 0 and np.all(adjusted_residuals > 0):
+                confidence, std_dev, residual_variance = statistical_results(np.log(adjusted_residuals))
+            else:
+                # Fallback if log transformation is problematic
+                print(
+                    f"Warning: Log transformation for statistical results failed for {material_name}. Using original residuals.")
+                confidence, std_dev, residual_variance = statistical_results(residuals)
+        else:
+            confidence, std_dev, residual_variance = statistical_results(residuals)
+
+    return {
+        'polyfit': poly,
+        'confidence_95%': confidence,
+        'std_dev': std_dev,
+        'residual_distribution': dist_type
+    }
+
+
+def plot_qq_plot(residuals: np.array, plot_title: str, dist_type: str):
+    """
+    Generates a Q-Q plot for the given residuals against the specified distribution type.
+    """
+    if residuals.size < 3:  # scipy.stats.probplot needs at least 3 points
+        print(f"Skipping Q-Q plot for {plot_title}: Not enough residuals ({residuals.size}) to plot.")
+        return
+
+    fig, ax = plt.subplots(figsize=(6, 4))
+    if dist_type == 'lognormal':
+        # Apply log transformation to residuals for lognormal Q-Q plot
+        adjusted_residuals = residuals - np.min(residuals) + 1e-9
+        if adjusted_residuals.size > 0 and np.all(adjusted_residuals > 0):
+            scipy.stats.probplot(np.log(adjusted_residuals), dist="norm", plot=ax)
+            ax.set_title(f'Q-Q Plot: {plot_title} (Lognormal reference)')
+        else:
+            print(
+                f"Skipping Q-Q plot for {plot_title}: No positive residuals for lognormal reference after adjustment.")
+            plt.close(fig)
+            return
+    else:
+        # Default to normal distribution for other cases or when no specific fit
+        scipy.stats.probplot(residuals, dist="norm", plot=ax)
+        ax.set_title(f'Q-Q Plot: {plot_title} (Normal reference)')
+    plt.grid(True)
+    plt.tight_layout()
+    plt.show()
+
+
+def calculate_intersection(poly1: np.poly1d, poly2: np.poly1d) -> np.array:
+    """Calculates real intersection points between two polynomials."""
+    intersection_poly = np.poly1d(poly1 - poly2)
+    intersection_x = np.roots(intersection_poly)
+    real_intersection_x = intersection_x[np.isreal(intersection_x)].real
+    return real_intersection_x if real_intersection_x.size > 0 else np.array([])
+
+
+def load_vestas_data(file_path: str, sheet_name: str) -> pd.DataFrame:
+    """Loads Vestas turbine materials data from a specified Excel sheet."""
+    return pd.read_excel(file_path, sheet_name=sheet_name, dtype=None, decimal=";", header=0)
+
+
+def plot_materials(x, y, residuals, interpolation_eq, confidence, xlabel: str, ylabel: str, title: str, grid=True,
+                   adjusted_plot=True):
+    """
+    For the scatter points of x and y, given the residuals, fitting curve (interpolation_eq), and confidence 95% (value
+    that stablishes the minimim and maximum deviation from the mean that guarantees that 95% of the values will fall in
+    that range), it shows the corresponding plot. It's not saving it, just showing.
+    Note:
+    The variable adjusted_plot allows to extend the plot from 0 to 15 MW.
+    """
+    y_mean = np.mean(y)
+    # Handle case where ss_total might be zero (e.g., all y values are the same)
+    ss_total = np.sum((y - y_mean) ** 2)
+    ss_residual = np.sum(residuals ** 2)
+    r_squared = 1 - (ss_residual / ss_total) if ss_total != 0 else np.nan
+
+    # Determine x interpolation range
+    if adjusted_plot:
+        # Check if x has at least two unique points to define a range
+        if len(np.unique(x)) < 2:
+            x_interpolate = np.array([x.min(), x.max()]) if x.size > 0 else np.array([0, 1])
+        else:
+            x_interpolate = np.linspace(x.min(), x.max(), 100)
+    else:
+        x_interpolate = np.linspace(0, 15, 100)
+
+    # Ensure interpolation_eq is a callable poly1d object before calling
+    if isinstance(interpolation_eq, np.poly1d):
+        y_interpolated = interpolation_eq(x_interpolate)
+    else:
+        y_interpolated = np.zeros_like(x_interpolate)  # Fallback if polyfit failed
+
+    # Plot the data, fitted curve, and confidence interval
+    plt.figure(figsize=(10, 6))
+    plt.scatter(x, y, color='blue', label='Data')
+    plt.plot(x_interpolate, y_interpolated, color='red', label='Regression Line')
+
+    # Only plot confidence interval if confidence is a valid number
+    if not np.isnan(confidence):
+        plt.fill_between(x_interpolate, y_interpolated - confidence, y_interpolated + confidence,
+                         color='red', alpha=0.2, label='95% Confidence Interval')
+
+    # Add R-squared annotation
+    if not np.isnan(r_squared):
+        plt.annotate(f"R-squared = {r_squared:.2f}", xy=(0.05, 0.9), xycoords='axes fraction', fontsize=10)
+    else:
+        plt.annotate("R-squared: N/A", xy=(0.05, 0.9), xycoords='axes fraction', fontsize=10)
+
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    plt.title(title)
+    plt.grid(grid)
+    plt.legend()
+    plt.show()
+
 
 def steel_turbine(plot_mat: bool = False, regression_adjustment: Literal['D2h', 'Hub height'] = 'D2h'):
     """
     It returns a dictionary 'materials_polyfits' that contains the fitting curve of steel (mass vs hub height). The
-    dictionary has the keys 'polyfit' and 'confidence_95%' where the values are stored. The uncertainty (to be added
-    to the lci) is stored as 'std_dev' also in the same dictionary and corresponds to the standard deviation of the
-    residuals. If plot_mat is set to True, all the materials fitting plots will be shown.
+    dictionary has the keys 'polyfit', 'confidence_95%', 'std_dev', and 'residual_distribution' where the values are stored.
+    If plot_mat is set to True, all the materials fitting plots will be shown.
     """
-    vestas_data = pd.read_excel(consts.VESTAS_FILE, sheet_name="1_MATERIALS_TURBINE", dtype=None, decimal=";", header=0)
+    vestas_data = load_vestas_data(consts.VESTAS_FILE, "1_MATERIALS_TURBINE")
 
-    if regression_adjustment == 'Hub height':
-        short_vestas_data = vestas_data[vestas_data['Hub height'] <= 84]
-        # Extracting columns
-        x = vestas_data['Hub height']
-    else:
-        short_vestas_data = vestas_data[vestas_data['D2h'] <= 1053696]
-        x = vestas_data['D2h']
-    y = vestas_data['Low alloy steel']
-    # Remove NaN values
-    valid_indices = ~np.isnan(x) & ~np.isnan(y)
-    new_x = x[valid_indices]
-    new_y = y[valid_indices]
-    # Dictionary to save the polyfits and confidence intervals
+    # Determine x-column based on regression_adjustment
+    x_col = 'Hub height' if regression_adjustment == 'Hub height' else 'D2h'
+
+    x_full = vestas_data[x_col]
+    y_full = vestas_data['Low alloy steel']
+
+    # Remove NaN values for full range data
+    valid_full_indices = ~np.isnan(x_full) & ~np.isnan(y_full)
+    x_full = x_full[valid_full_indices]
+    y_full = y_full[valid_full_indices]
+
     materials_polyfits = {}
     materials_polyfits_short = {}
-    # Linear regression (steel mass vs height) and statistics
-    fit_steel = np.polyfit(new_x, new_y, 1)
-    predict_steel = np.poly1d(fit_steel)
-    # Calculate residuals
-    residuals = new_y - predict_steel(new_x)
-    # Calculate standard error of the estimate
-    std_error = np.sqrt(np.mean(residuals ** 2))
-    # Calculate confidence intervals (95%) for interpolated x values
-    confidence = 1.96 * std_error  # 95% confidence interval multiplier
-    residual_variance = np.mean(residuals ** 2)
-    residual_std_dev = np.sqrt(residual_variance)
-    # long_short = {}
-    polyfit_and_confidence = {'polyfit': predict_steel, 'confidence_95%': confidence, 'std_dev': residual_std_dev}
-    materials_polyfits['Low alloy steel'] = polyfit_and_confidence
-    # Extract short data
-    if regression_adjustment == 'Hub height':
-        short_x = short_vestas_data['Hub height']
-    else:
-        short_x = short_vestas_data['D2h']
-    short_y = short_vestas_data['Low alloy steel']
-    slope, intercept = linear_regression(short_x, short_y, proportional=True)
-    # slope, intercept = linear_regression(short_x, short_y)
-    short_predict_steel = np.poly1d([slope, intercept])
-    # Calculate residuals
-    residuals = short_y - short_predict_steel(short_x)
-    # Calculate standard error of the estimate
-    std_error = np.sqrt(np.mean(residuals ** 2))
-    # Calculate confidence intervals (95%) for interpolated x values
-    confidence = 1.96 * std_error  # 95% confidence interval multiplier
-    # residual_variance = np.mean(residuals ** 2)
-    residual_std_dev = np.sqrt(residual_variance)
-    # We mantain the same confidence and std_dev as the main function.
-    polyfit_and_confidence_short = {'polyfit': short_predict_steel, 'confidence_95%': confidence,
-                                    'std_dev': residual_std_dev}
-    if plot_mat:
-        plot_materials(x=short_x, y=short_y, residuals=residuals, interpolation_eq=short_predict_steel,
-                       confidence=confidence,
-                       xlabel='Hub height (m)', ylabel='Steel mass (t)', title='Steel')
-    materials_polyfits_short['Low alloy steel'] = polyfit_and_confidence_short
 
-    # where do the linear equations intersect?
-    intersection_poly = np.poly1d(short_predict_steel - predict_steel)
-    intersection_x = np.roots(intersection_poly)
+    # Fit Full Range Model
+    full_model_fit = fit_model(x_full, y_full, 'Low alloy steel (Full Range)', proportional=False)
+
+    materials_polyfits['Low alloy steel'] = {
+        'polyfit': full_model_fit['polyfit'],
+        'confidence_95%': full_model_fit['confidence_95%'],
+        'std_dev': full_model_fit['std_dev'],
+        'residual_distribution': full_model_fit['residual_distribution']
+    }
+
+    # Prepare Short Range Data
+    short_limit = 84 if regression_adjustment == 'Hub height' else 1053696
+    short_vestas_data = vestas_data[vestas_data[x_col] <= short_limit]
+    x_short = short_vestas_data[x_col]
+    y_short = short_vestas_data['Low alloy steel']
+
+    # Remove NaN values for short range data
+    valid_short_indices = ~np.isnan(x_short) & ~np.isnan(y_short)
+    x_short = x_short[valid_short_indices]
+    y_short = y_short[valid_short_indices]
+
+    # Fit Short Range Model (proportional)
+    short_model_fit = fit_model(x_short, y_short, 'Low alloy steel (Short Range)', proportional=True)
+
+    materials_polyfits_short['Low alloy steel'] = {
+        'polyfit': short_model_fit['polyfit'],
+        'confidence_95%': short_model_fit['confidence_95%'],
+        'std_dev': short_model_fit['std_dev'],
+        'residual_distribution': short_model_fit['residual_distribution']
+    }
+
+    # Calculate Intersection
+    intersection_x = calculate_intersection(full_model_fit['polyfit'], short_model_fit['polyfit'])
     intersection = {'Low alloy steel': intersection_x}
+
+    # Plotting if requested
+    if plot_mat:
+        # Plot Full Range
+        if isinstance(full_model_fit['polyfit'], np.poly1d):
+            residuals_full = y_full - full_model_fit['polyfit'](x_full)
+            plot_materials(
+                x=x_full, y=y_full,
+                residuals=residuals_full,
+                interpolation_eq=full_model_fit['polyfit'],
+                confidence=full_model_fit['confidence_95%'],
+                xlabel=f'{x_col} (m)' if regression_adjustment == 'Hub height' else f'{x_col}',  # Dynamic label
+                ylabel='Low alloy steel (t)',
+                title='Low alloy steel (Full Range)'
+            )
+            plot_qq_plot(residuals_full, 'Low alloy steel (Full Range)', full_model_fit['residual_distribution'])
+        else:
+            print("Skipping full range plot for Low alloy steel: Model fit was not successful.")
+
+        # Plot Short Range
+        if isinstance(short_model_fit['polyfit'], np.poly1d):
+            residuals_short = y_short - short_model_fit['polyfit'](x_short)
+            plot_materials(
+                x=x_short, y=y_short,
+                residuals=residuals_short,
+                interpolation_eq=short_model_fit['polyfit'],
+                confidence=short_model_fit['confidence_95%'],
+                xlabel=f'{x_col} (m)' if regression_adjustment == 'Hub height' else f'{x_col}',  # Dynamic label
+                ylabel='Low alloy steel (t)',
+                title='Low alloy steel (Short Range)'
+            )
+            plot_qq_plot(residuals_short, 'Low alloy steel (Short Range)', short_model_fit['residual_distribution'])
+        else:
+            print("Skipping short range plot for Low alloy steel: Model fit was not successful.")
 
     return vestas_data, materials_polyfits, materials_polyfits_short, intersection
 
 
 def other_turbine_materials(plot_mat=False, regression_adjustment: Literal['D2h', 'Hub height'] = 'D2h') -> (
-        tuple, dict, dict):
+        Tuple[Dict, Dict, Dict]):
     """
     It returns a dictionary 'materials_polyfits' that contains the fitting curves of steel and turbine materials.
-    The dictionary has the keys 'polyfit' and 'confidence_95%' where the values are stored.
+    The dictionary has the keys 'polyfit', 'confidence_95%', 'std_dev', and 'residual_distribution' where the values are stored.
     If plot_mat is set to True, all the materials fitting plots will be shown.
     """
+    # Call steel_turbine to get initial data and steel fits
     (vestas_data, materials_polyfits,
      materials_polyfits_short, intersection) = steel_turbine(regression_adjustment=regression_adjustment)
-    columns = list(vestas_data)
-    last_index = columns.index('Lubricating oil')
-    initial_index = columns.index('Low alloy steel') + 1
 
-    while initial_index <= last_index:
-        short = False
-        materials_to_adjust_3mw = ['PUR', 'PVC']
-        materials_to_adjust_1mw = ['Low alloy steel', 'Chromium steel', 'Epoxy resin', 'Fiberglass', 'Rubber',
-                                   'Aluminium']
-        if columns[initial_index] in materials_to_adjust_3mw:
-            short_vestas_data = vestas_data[vestas_data['Power (MW)'] <= 3.0]
-            short = True
-        elif columns[initial_index] in materials_to_adjust_1mw:
-            short_vestas_data = vestas_data[vestas_data['Power (MW)'] <= 1.0]
-            short = True
-        x = vestas_data[columns[columns.index('Power (MW)')]]  # power (MW)
-        y = vestas_data[columns[initial_index]]  # material mass (t)
-        valid_indices = ~np.isnan(x) & ~np.isnan(y)
-        new_x = x[valid_indices]
-        new_y = y[valid_indices]
-        fit = np.polyfit(new_x, new_y, 1)
-        predict_mat = np.poly1d(fit)
-        residuals = new_y - predict_mat(new_x)
-        std_error = np.sqrt(np.mean(residuals ** 2))
-        confidence = 1.96 * std_error
-        residual_variance = np.mean(residuals ** 2)
-        residual_std_dev = np.sqrt(residual_variance)
-        polyfit_and_confidence = {'polyfit': predict_mat, 'confidence_95%': confidence, 'std_dev': residual_std_dev}
-        materials_polyfits[columns[initial_index]] = polyfit_and_confidence
-        if short:
-            short_x = short_vestas_data[columns[columns.index('Power (MW)')]]
-            short_y = short_vestas_data[columns[initial_index]]
-            valid_indices = ~np.isnan(x) & ~np.isnan(y)
-            short_x = short_x[valid_indices]
-            short_y = short_y[valid_indices]
-            slope, intercept = linear_regression(short_x, short_y, proportional=True)
-            # slope, intercept = linear_regression(short_x, short_y)
-            short_predict_mat = np.poly1d([slope, intercept])
-            residuals = short_y - short_predict_mat(short_x)
-            # Calculate standard error of the estimate
-            std_error = np.sqrt(np.mean(residuals ** 2))
-            # Calculate confidence intervals (95%) for interpolated x values
-            confidence = 1.96 * std_error  # 95% confidence interval multiplier
-            # residual_variance = np.mean(residuals ** 2)
-            residual_std_dev = np.sqrt(residual_variance)
-            polyfit_and_confidence_short = {'polyfit': short_predict_mat, 'confidence_95%': confidence,
-                                            'std_dev': residual_std_dev}
-            materials_polyfits_short[columns[initial_index]] = polyfit_and_confidence_short
+    columns = list(vestas_data.columns)  # Use .columns for pandas DataFrame
 
-            intersection_poly = np.poly1d(short_predict_mat - predict_mat)
-            intersection_x = np.roots(intersection_poly)
-            intersection[columns[initial_index]] = intersection_x
+    # Define material categories for short-range adjustments
+    materials_to_adjust_3mw = ['PUR', 'PVC']
+    materials_to_adjust_1mw = ['Low alloy steel', 'Chromium steel', 'Epoxy resin', 'Fiberglass', 'Rubber', 'Aluminium']
 
+    # Iterate through material columns starting after 'Low alloy steel' up to 'Lubricating oil'
+    try:
+        initial_col_index = columns.index('Low alloy steel') + 1
+        last_col_index = columns.index('Lubricating oil')
+    except ValueError as e:
+        print(f"Error: Required column not found in turbine materials data: {e}")
+        return materials_polyfits, materials_polyfits_short, intersection
+
+    current_col_index = initial_col_index
+    while current_col_index <= last_col_index:
+        material_name = columns[current_col_index]
+        is_short_range_material = False
+        short_data_mask = None  # Initialize mask
+
+        if material_name in materials_to_adjust_3mw:
+            short_data_mask = vestas_data['Power (MW)'] <= 3.0
+            is_short_range_material = True
+        elif material_name in materials_to_adjust_1mw:
+            short_data_mask = vestas_data['Power (MW)'] <= 1.0
+            is_short_range_material = True
+
+        # Full range data for current material, using 'Power (MW)' as x
+        x_full = vestas_data['Power (MW)']
+        y_full = vestas_data[material_name]
+        valid_full = ~np.isnan(x_full) & ~np.isnan(y_full)
+        x_full = x_full[valid_full]
+        y_full = y_full[valid_full]
+
+        # Fit full range model
+        full_model_fit = fit_model(x_full, y_full, material_name + ' (Full Range)', proportional=False)
+        materials_polyfits[material_name] = {
+            'polyfit': full_model_fit['polyfit'],
+            'confidence_95%': full_model_fit['confidence_95%'],
+            'std_dev': full_model_fit['std_dev'],
+            'residual_distribution': full_model_fit['residual_distribution']
+        }
+
+        # If it's a short-range material, fit the short-range model as well
+        if is_short_range_material and short_data_mask is not None:
+            short_vestas_data = vestas_data[short_data_mask]
+            x_short = short_vestas_data['Power (MW)']
+            y_short = short_vestas_data[material_name]
+            valid_short = ~np.isnan(x_short) & ~np.isnan(y_short)
+            x_short = x_short[valid_short]
+            y_short = y_short[valid_short]
+
+            # Fit short range model (proportional to 0,0)
+            short_model_fit = fit_model(x_short, y_short, material_name + ' (Short Range)', proportional=True)
+            materials_polyfits_short[material_name] = {
+                'polyfit': short_model_fit['polyfit'],
+                'confidence_95%': short_model_fit['confidence_95%'],
+                'std_dev': short_model_fit['std_dev'],
+                'residual_distribution': short_model_fit['residual_distribution']
+            }
+
+            # Calculate intersection
+            if isinstance(full_model_fit['polyfit'], np.poly1d) and isinstance(short_model_fit['polyfit'], np.poly1d):
+                intersection_points = calculate_intersection(full_model_fit['polyfit'], short_model_fit['polyfit'])
+                intersection[material_name] = intersection_points
+            else:
+                print(
+                    f"Skipping intersection calculation for {material_name}: One or both polyfit objects are invalid.")
+                intersection[material_name] = np.array([])  # Store empty array if intersection can't be calculated
+
+        # Plot if requested
         if plot_mat:
-            plot_materials(x=new_x, y=new_y, residuals=residuals, interpolation_eq=predict_mat, confidence=confidence,
-                           xlabel='Power (MW)', ylabel=columns[initial_index] + ' (t)', title=columns[initial_index])
-        initial_index += 1
+            # Main regression plot for full range
+            if isinstance(full_model_fit['polyfit'], np.poly1d):
+                residuals_full = y_full - full_model_fit['polyfit'](x_full)
+                plot_materials(
+                    x=x_full, y=y_full,
+                    residuals=residuals_full,
+                    interpolation_eq=full_model_fit['polyfit'],
+                    confidence=full_model_fit['confidence_95%'],
+                    xlabel='Power (MW)',
+                    ylabel=f"{material_name} (t)",
+                    title=f"{material_name} (Full Range)"
+                )
+                # Q-Q plot for full range residuals
+                plot_qq_plot(residuals_full, f"{material_name} (Full Range)", full_model_fit['residual_distribution'])
+            else:
+                print(f"Skipping plot for {material_name} (Full Range): Model fit was not successful.")
+
+            if is_short_range_material and short_data_mask is not None:
+                if isinstance(short_model_fit['polyfit'], np.poly1d):
+                    # Q-Q plot for short range residuals
+                    residuals_short = y_short - short_model_fit['polyfit'](x_short)
+                    plot_materials(
+                        x=x_short, y=y_short,
+                        residuals=residuals_short,
+                        interpolation_eq=short_model_fit['polyfit'],
+                        confidence=short_model_fit['confidence_95%'],
+                        xlabel='Power (MW)',
+                        ylabel=f"{material_name} (t)",
+                        title=f"{material_name} (Short Range)"
+                    )
+                    plot_qq_plot(residuals_short, f"{material_name} (Short Range)",
+                                 short_model_fit['residual_distribution'])
+                else:
+                    print(f"Skipping plot for {material_name} (Short Range): Model fit was not successful.")
+
+        current_col_index += 1
     return materials_polyfits, materials_polyfits_short, intersection
 
 
@@ -174,72 +528,71 @@ def rare_earth(generator_type: Literal['dd_eesg', 'dd_pmsg', 'gb_pmsg', 'gb_dfig
 def foundations_mat(mat_file: str, plot_mat=False, regression_adjustment: Literal['D2h', 'Hub height'] = 'D2h'):
     """
     It returns a dictionary 'materials_polyfits' that contains the fitting curves of all the materials (steel, turbine
-    and foundations). The dictionary has the keys 'polyfit' and 'confidence_95%' where the values are stored.
+    and foundations). The dictionary has the keys 'polyfit', 'confidence_95%', 'std_dev', and 'residual_distribution'
+    where the values are stored.
     If plot_mat is set to True, all the materials fitting plots will be shown.
     """
+    # Start by getting turbine materials data from the existing function
     (materials_polyfits, mat_polyfits_short,
      intersection) = other_turbine_materials(regression_adjustment=regression_adjustment)
-    vestas_data = pd.read_excel(mat_file, sheet_name="1_MATERIALS_FOUNDATIONS", dtype=None, decimal=";", header=0)
-    columns = list(vestas_data)
-    last_index = columns.index('Concrete')
-    initial_index = columns.index('Low alloy steel')
-    while initial_index <= last_index:
-        x = vestas_data[
-            columns[columns.index('Power (MW)')]]  # power (MW). Maybe in the future I use tip momentum (D^2*h)
-        y = vestas_data[columns[initial_index]]  # material mass (t)
+
+    # Load foundations data
+    vestas_data = load_vestas_data(mat_file, "1_MATERIALS_FOUNDATIONS")
+    columns = list(vestas_data.columns)
+
+    # Find the indices for materials within the foundations sheet
+    try:
+        initial_col_index = columns.index('Low alloy steel')
+        last_col_index = columns.index('Concrete')
+        power_mw_col_index = columns.index('Power (MW)')
+    except ValueError as e:
+        print(f"Error: Required column not found in foundations data: {e}")
+        return materials_polyfits, mat_polyfits_short, intersection
+
+    # Iterate through material columns for foundations
+    current_col_index = initial_col_index
+    while current_col_index <= last_col_index:
+        material_name = columns[current_col_index]
+        x = vestas_data[columns[power_mw_col_index]]  # Power (MW)
+        y = vestas_data[material_name]  # Material mass (t)
+
         valid_indices = ~np.isnan(x) & ~np.isnan(y)
         new_x = x[valid_indices]
         new_y = y[valid_indices]
-        fit = np.polyfit(new_x, new_y, 1)
-        predict_mat = np.poly1d(fit)
-        residuals = new_y - predict_mat(new_x)
-        residual_variance = np.mean(residuals ** 2)
-        residual_std_dev = np.sqrt(residual_variance)
-        std_error = np.sqrt(np.mean(residuals ** 2))
-        confidence = 1.96 * std_error
-        polyfit_and_confidence = {}
-        polyfit_and_confidence['polyfit'] = predict_mat
-        polyfit_and_confidence['confidence_95%'] = confidence
-        polyfit_and_confidence['std_dev'] = residual_std_dev
-        materials_polyfits[columns[initial_index] + '_foundations'] = polyfit_and_confidence
+
+        # Use the robust fit_model function
+        # Assuming linear fit for foundation materials, not proportional
+        model_fit = fit_model(new_x, new_y, material_name + ' (Foundations)', proportional=False)
+
+        # Store the results in the dictionary
+        materials_polyfits[material_name + '_foundations'] = {
+            'polyfit': model_fit['polyfit'],
+            'confidence_95%': model_fit['confidence_95%'],
+            'std_dev': model_fit['std_dev'],
+            'residual_distribution': model_fit['residual_distribution']
+        }
+
         if plot_mat:
-            plot_materials(x=new_x, y=new_y, residuals=residuals, interpolation_eq=predict_mat, confidence=confidence,
-                           xlabel='Power (MW)', ylabel=columns[initial_index] + ' (t)', title=columns[initial_index])
-        initial_index += 1
+            # Only plot if the model fit was successful (polyfit is a valid object)
+            if isinstance(model_fit['polyfit'], np.poly1d):
+                residuals = new_y - model_fit['polyfit'](new_x)
+                plot_materials(
+                    x=new_x, y=new_y,
+                    residuals=residuals,
+                    interpolation_eq=model_fit['polyfit'],
+                    confidence=model_fit['confidence_95%'],
+                    xlabel='Power (MW)',
+                    ylabel=f"{material_name} (t)",
+                    title=f"{material_name} (Foundations)"
+                )
+                # Generate Q-Q plot for foundations material residuals
+                plot_qq_plot(residuals, f"{material_name} (Foundations)", model_fit['residual_distribution'])
+            else:
+                print(
+                    f"Skipping plot for {material_name} (Foundations): Model fit was not successful or data was insufficient.")
+
+        current_col_index += 1
     return materials_polyfits, mat_polyfits_short, intersection
-
-
-def plot_materials(x, y, residuals, interpolation_eq, confidence, xlabel: str, ylabel: str, title: str, grid=True,
-                   adjusted_plot=True):
-    """
-    for the scatter points of x and y, given the residuals, fitting curve (interpolation_eq), and confidence 95% (value
-    that stablishes the minimim and maximum deviation from the mean that guarantees that 95% of the values will fall in
-    that range), it shows the corresponding plot. It's not saving it, just showing.
-    Note:
-    The variable adjusted_plot allows to extend the plot from 0 to 15 MW.
-    """
-    y_mean = np.mean(y)
-    ss_total = np.sum((y - y_mean) ** 2)
-    ss_residual = np.sum(residuals ** 2)
-    r_squared = 1 - (ss_residual / ss_total)
-    if adjusted_plot:
-        x_interpolate = np.linspace(min(x), max(x), 100)
-        y_interpolated = interpolation_eq(x_interpolate)
-    else:
-        x_interpolate = np.linspace(0, 15, 100)
-        y_interpolated = interpolation_eq(x_interpolate)
-    # Plot the data, fitted curve, and confidence interval
-    plt.figure(figsize=(10, 6))
-    plt.scatter(x, y, color='blue')
-    plt.plot(x_interpolate, y_interpolated, color='red')
-    plt.fill_between(x_interpolate, y_interpolated - confidence, y_interpolated + confidence,
-                     color='red', alpha=0.2)
-    plt.annotate(f"R-squared = {r_squared:.2f}", xy=(0.05, 0.9), xycoords='axes fraction', fontsize=10)
-    plt.xlabel(xlabel)
-    plt.ylabel(ylabel)
-    plt.title(title)
-    plt.grid(grid)
-    plt.show()
 
 
 def materials_mass(generator_type: Literal['dd_eesg', 'dd_pmsg', 'gb_pmsg', 'gb_dfig'],
@@ -878,7 +1231,22 @@ def lci_materials(new_db: bd.Database, cutoff391: bd.Database, ei_index: dict, p
             ex = materials_activity.new_exchange(input=inp, type='technosphere', amount=mass_materials[material])
             ex.save()
             materials_activity.save()
-        elif any(element in material for element in ['Low alloy steel', 'Low alloy steel_foundations']):
+        elif material == 'Low alloy steel':
+            inp, ch = manipulate_steel_activities(commissioning_year=commissioning_year,
+                                                  recycled_share=recycled_share_steel,
+                                                  electricity_mix=electricity_mix_steel,
+                                                  printed_warning=consts.PRINTED_WARNING_STEEL,
+                                                  cutoff391=cutoff391, new_db=new_db, ei_index=ei_index)
+            consts.PRINTED_WARNING_STEEL = True
+            ex = materials_activity.new_exchange(input=inp, type='technosphere', amount=mass_materials[material])
+            # Uncertainty added as the standard deviation of the residuals
+            ex['uncertainty type'] = UniformUncertainty.id  # now it adjusts to Uniform Distribution
+            ex['loc'] = mass_materials[material]
+            ex['scale'] = material_polyfits[material] * 1000
+            ex['minimum'] = 0
+            ex.save()
+            materials_activity.save()
+        elif material == 'Low alloy steel_foundations':
             inp, ch = manipulate_steel_activities(commissioning_year=commissioning_year,
                                                   recycled_share=recycled_share_steel,
                                                   electricity_mix=electricity_mix_steel,
