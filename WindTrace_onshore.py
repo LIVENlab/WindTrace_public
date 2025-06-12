@@ -2099,6 +2099,8 @@ def lca_wind_turbine(new_db: bd.Database,
         methods = indicators
     else:
         methods = [m for m in bd.methods if method in m[0] and 'no LT' not in m[0]]
+        if len(methods) == 0:
+            methods = [m for m in bd.methods if method in m[2] and 'no LT' not in m[2]] # hardfix for ecoinvent 3.10.1
 
     if turbine:
         print('Functional unit: 1 turbine')
