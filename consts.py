@@ -1,5 +1,12 @@
 import os
 
+
+# variables to be set by the user
+PROJECT_NAME = 'jupyter_notebook'
+SPOLD_FILES = r'C:\Users\user\UAB\LIVENlab - ENBIOSdev - ENBIOSdev\ecoinvent_versions\ecoinvent 3.10.1_cutoff_ecoSpold02\datasets'
+NEW_DB_NAME = 'test'
+
+
 # When possible, RER or Europe without Switzerland locations have been selected
 MATERIALS_EI_ACTIVITY_CODES = {
     'Low alloy steel':
@@ -367,10 +374,4 @@ REPLACEMENT_BASELINE = {'steel': 0.84, 'c_steel': 0.84, 'iron': 1, 'aluminium': 
 # vestas_file path
 cwd = os.getcwd()
 VESTAS_FILE = os.path.join(cwd, 'clean_data.xlsx')
-
-# variables to be set by the user
-PROJECT_NAME = 'jupyter_notebook'
-SPOLD_FILES = r"C:\ecoinvent_data\3.9.1\cutoff\datasets"
-NEW_DB_NAME = 'test'
-
 

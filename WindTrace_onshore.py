@@ -583,7 +583,7 @@ def manipulate_steel_activities(new_db: bd.Database, cutoff391: bd.Database, ei_
         if not printed_warning:
             print('WARNING. You did not select any electricity_mix. '
                   'The mean shares by country applied in the steel industry between 2017 and 2021 will be used')
-            print('Electricity mix: European mix provided by Eurofer')
+            print('Electricity mix: European mix from Eurofer')
         act_name = "market for steel, low-alloyed, " + str(commissioning_year - 1)
         code_name = "steel, " + str(commissioning_year - 1)
         try:
@@ -854,7 +854,7 @@ def lci_materials(new_db: bd.Database, cutoff391: bd.Database, ei_index: dict, p
         turbine_act.save()
     except bd.errors.DuplicateNode:
         print(
-            'An inventory for a park with the name ' + '"' + park_name + '"' + 'was already created before in the '
+            'An inventory for a park with the name ' + '"' + park_name + '"' + ' was already created before in the '
                                                                                'database ')
         print('"new_db". You may want to think about giving '
               'another name to the wind park you are trying to '
