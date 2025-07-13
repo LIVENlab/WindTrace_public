@@ -2,6 +2,8 @@
 
 ## About
 WindTrace is a python open-source parametric life-cycle inventory model to create tailor-made inventories of onshore wind turbines and park fleets and assess their environmental impacts.
+It has been funded by the European Commission though the Horizon Europe project "JUSTWIND4ALL" (GA 101083936). 
+
 
 ## Getting started
 To get ready to use WindTrace, you must first create a virtual environment using the YAML file provided.
