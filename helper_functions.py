@@ -167,7 +167,7 @@ def fit_model(x: np.array, y: np.array, material_name: str,
         std_dev = np.nan
         residual_variance = np.nan
     else:
-        dist_type = test_residual_distributions(residuals, material_name, True)
+        dist_type = test_residual_distributions(residuals, material_name, False)
         if dist_type == 'lognormal':
             # Apply log transformation for statistical results if distribution is lognormal
             adjusted_residuals = residuals - np.min(residuals) + 1e-9
