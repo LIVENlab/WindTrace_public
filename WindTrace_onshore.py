@@ -859,7 +859,7 @@ def lci_materials(new_db: bd.Database, cutoff391: bd.Database, ei_index: dict, p
         print('"new_db". You may want to think about giving '
               'another name to the wind park you are trying to '
               'analyse. Otherwise, you may want to delete '
-              'the content of "new_db" by runing delete_new_db().')
+              'the content of "new_db" by running delete_db().')
         print(
             'WARNING: if you run delete_new_db() '
             'ALL WIND PARKS STORED IN THAT DATABASE WILL '
@@ -2151,6 +2151,10 @@ def find_unique_act(index: dict, database: bd.Database, name: str, location: str
     key = index.get((name, location, reference_product))
     return database.get(key[1])
 
+
+def delete_db(db_name: str):
+    for a in bd.Database(db_name):
+        a.delete()
 
 def build_bw_index(database: bd.Database):
     data = database.load()
