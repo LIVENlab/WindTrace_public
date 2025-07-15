@@ -2,9 +2,9 @@ import os
 
 
 # variables to be set by the user
-PROJECT_NAME = 'jupyter_notebook'
-SPOLD_FILES = r'C:\Users\user\UAB\LIVENlab - ENBIOSdev - ENBIOSdev\ecoinvent_versions\ecoinvent 3.10.1_cutoff_ecoSpold02\datasets'
-NEW_DB_NAME = 'test'
+PROJECT_NAME = 'EXAMPLE_PROJECT'
+SPOLD_FILES = r'PATH TO SPOLDS'
+NEW_DB_NAME = 'EXAMPLE_DATABASE'
 
 
 # When possible, RER or Europe without Switzerland locations have been selected
