@@ -2080,7 +2080,8 @@ def lca_wind_turbine(new_db: bd.Database,
                      park_name: str, park_power: float,
                      method: str = 'ReCiPe 2016 v1.03, midpoint (H)',
                      indicators: List[Tuple[str, str, str]] = None,
-                     turbine: bool = True):
+                     turbine: bool = True,
+                     ecoinvent_v3_10: bool = False):
     """
     Based on LCIs previously built with the function lci_wind_turbine, it creates a dictionary (total_park_results)
     with the lca score results of the total park. The dictionary follows this structure:
@@ -2136,13 +2137,19 @@ def lca_wind_turbine(new_db: bd.Database,
     for m in methods:
         lca_obj.switch_method(m)
         lca_obj.lcia()
-        results[m[1]] = lca_obj.score
+        if ecoinvent_v3_10:
+            results[m[2]] = lca_obj.score
+        else:
+            results[m[1]] = lca_obj.score
     # per kwh
     lca_obj = act_kwh.lca(amount=1)
     for m in methods:
         lca_obj.switch_method(m)
         lca_obj.lcia()
-        results_kwh[m[1]] = lca_obj.score
+        if ecoinvent_v3_10:
+            results_kwh[m[2]] = lca_obj.score
+        else:
+            results_kwh[m[1]] = lca_obj.score
 
     return results, results_kwh
 
