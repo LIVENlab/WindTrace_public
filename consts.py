@@ -227,11 +227,11 @@ RARE_EARTH_DICT = {'Praseodymium': {'dd_eesg': 9, 'dd_pmsg': 35, 'gb_pmsg': 4, '
                    'Boron': {'dd_eesg': 0, 'dd_pmsg': 6, 'gb_pmsg': 1, 'gb_dfig': 0}
                    }
 
-# scenarios lifetime extension, replacement, repowering
+# scenarios lifetime extension, replacement, repowering - percentage of the inventory that must be replaced
 LONG_EXTENSION = {'steel': 0.08, 'c_steel': 0.08, 'iron': 1, 'aluminium': 0.65, 'copper': 0.81,
-                  'plastics': 1, 'others': 1, 'foundations': 0, 'electronics_and_electrics': 0}
+                  'plastics': 1, 'others': 1, 'foundations': 0, 'electronics_and_electrics': 0.8}
 SHORT_EXTENSION = {'steel': 0.01, 'c_steel': 0.01, 'iron': 0.34, 'aluminium': 0, 'copper': 0,
-                   'plastics': 0.91, 'others': 0, 'foundations': 0, 'electronics_and_electrics': 0}
+                   'plastics': 0, 'others': 0, 'foundations': 0, 'electronics_and_electrics': 0}
 REPLACEMENT_BASELINE = {'steel': 0.84, 'c_steel': 0.84, 'iron': 1, 'aluminium': 0.65, 'copper': 0.81,
                         'plastics': 1, 'others': 1, 'foundations': 0, 'electronics_and_electrics': 0}
 
@@ -240,8 +240,9 @@ cwd = os.getcwd()
 VESTAS_FILE = os.path.join(cwd, 'clean_data.xlsx')
 
 # variables to be set by the user
-PROJECT_NAME = 'Cabril_v3'
-SPOLD_FILES = r"C:\Users\1439891\OneDrive - UAB\Documentos\ecoinvent 3.9.1_cutoff_ecoSpold02\datasets"
+PROJECT_NAME = 'Cabril_v4'
+SPOLD_FILES = (r"C:\Users\1439891\Documents\ecoinvent 3.9.1_cutoff_ecoSpold02\datasets")
+#C:\Users\1439891\OneDrive - UAB\Documentos\ecoinvent 3.9.1_cutoff_ecoSpold02\datasets")
 
 
 

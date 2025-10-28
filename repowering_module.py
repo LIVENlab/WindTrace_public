@@ -1308,11 +1308,11 @@ if __name__ == "__main__":
     bd.projects.set_current(consts.PROJECT_NAME)
     bi.bw2setup()
     spold_files = consts.SPOLD_FILES
-    if "cutoff391" not in bd.databases:
-        ei = bi.SingleOutputEcospold2Importer(spold_files, "cutoff391", use_mp=False)
+    if "cutoff391reparajasi" not in bd.databases:
+        ei = bi.SingleOutputEcospold2Importer(spold_files, "cutoff391reparajasi", use_mp=False)
         ei.apply_strategies()
         ei.write_database()
-    cutoff391 = bd.Database("cutoff391")
+    cutoff391 = bd.Database("cutoff391reparajasi")
     if 'new_db' not in bd.databases:
         new_db = bd.Database('new_db')
         new_db.register()
@@ -1321,7 +1321,472 @@ if __name__ == "__main__":
 
 # example Laura:
 
-# Cabril I - check
+# # Cabril I - check
+# ###CABRIL I
+#
+#
+# # repowering
+#
+# lci_repowering(extension_long=False, extension_short=False, substitution=False, repowering=True,
+#                    park_name_i='Cabril_I_R_11', park_power_i=16.2, number_of_turbines_i=9,
+#                    park_location_i='PT',
+#                    park_coordinates_i=(40.98, -8.045),
+#                    manufacturer_i='Enercon',
+#                    rotor_diameter_i=66,
+#                    turbine_power_i=1.8, hub_height_i=65, commissioning_year_i=2002,
+#                    recycled_share_steel_i=None,
+#                    lifetime_i=22,
+#                    electricity_mix_steel_i=None,
+#                    generator_type_i='dd_eesg',
+#                    park_power_repowering=21.6,
+#                    number_of_turbines_repowering=3,
+#                    manufacturer_repowering='Vestas',
+#                    rotor_diameter_repowering=172,
+#                    turbine_power_repowering=7.2,
+#                    hub_height_repowering=114,
+#                    generator_type_repowering='dd_eesg',
+#                    electricity_mix_steel_repowering='Europe',
+#                    lifetime_repowering=25,
+#                    cf_repowering=0.292,
+#                    attrition_rate_repowering=0.009
+#                    )
+#
+# lci_excel_output(park_name='Cabril_I_R_11', extension=False, repowering=True, substitution=False,
+#                      park_power_repowering=21.6, scenario_name='repowering', method_name='EF v3.1')
+# ###CABRIL II
+#
+#  # repowering
+#
+# lci_repowering(extension_long=False, extension_short=False, substitution=False, repowering=True,
+#                    park_name_i='Cabril_II_R_2', park_power_i=4, number_of_turbines_i=2,
+#                    park_location_i='PT',
+#                    park_coordinates_i=(40.98, -8.045),
+#                    manufacturer_i='Enercon',
+#                    rotor_diameter_i=70,
+#                    turbine_power_i=2, hub_height_i=64, commissioning_year_i=2005,
+#                    recycled_share_steel_i=None,
+#                    lifetime_i=20,
+#                    electricity_mix_steel_i=None,
+#                    generator_type_i='dd_eesg',
+#                    park_power_repowering=7.2,
+#                    number_of_turbines_repowering=1,
+#                    manufacturer_repowering='Vestas',
+#                    rotor_diameter_repowering=172,
+#                    turbine_power_repowering=7.2,
+#                    hub_height_repowering=114,
+#                    generator_type_repowering='dd_eesg',
+#                    electricity_mix_steel_repowering='Europe',
+#                    lifetime_repowering=25,
+#                    cf_repowering=0.292,
+#                    attrition_rate_repowering=0.009
+#                    )
+#
+# lci_excel_output(park_name='Cabril_II_R_2', extension=False, repowering=True, substitution=False,
+#                      park_power_repowering=7.2, scenario_name='repowering', method_name='EF v3.1')
+#
+# # extension
+#
+# lci_repowering(extension_long=False, extension_short=True, substitution=False, repowering=False,
+#                    park_name_i='Cabril_I_SE_5', park_power_i=16.2, number_of_turbines_i=9,
+#                    park_location_i='PT',
+#                    park_coordinates_i=(40.98, -8.045),
+#                    manufacturer_i='Enercon',
+#                    rotor_diameter_i=66,
+#                    turbine_power_i=1.8, hub_height_i=65, commissioning_year_i=2002,
+#                    recycled_share_steel_i=None,
+#                    lifetime_i=22,
+#                    electricity_mix_steel_i=None,
+#                    generator_type_i='dd_eesg',
+#                    lifetime_extension=20, number_of_turbines_extension=9,
+#                    cf_extension=0.225, attrition_rate_extension=0.009
+#                    )
+#
+# lci_excel_output(park_name='Cabril_I_SE_5', extension=True, repowering=False, substitution=False,
+#                      park_power_repowering=0, scenario_name='extension', method_name='EF v3.1')
+#
+#
+# # Substitution
+#
+# lci_repowering(extension_long=False, extension_short=False, substitution=True, repowering=False,
+#                    park_name_i='Cabril_I_S', park_power_i=16.2, number_of_turbines_i=9,
+#                    park_location_i='PT',
+#                    park_coordinates_i=(40.98, -8.045),
+#                    manufacturer_i='Enercon',
+#                    rotor_diameter_i=66,
+#                    turbine_power_i=1.8, hub_height_i=65, commissioning_year_i=2002,
+#                    recycled_share_steel_i=None,
+#                    lifetime_i=22,
+#                    electricity_mix_steel_i=None,
+#                    generator_type_i='dd_eesg',
+#                    lifetime_substitution=25, number_of_turbines_substitution=9,
+#                    cf_substitution=0.225, attrition_rate_substitution=0.009
+#                    )
+#
+# lci_excel_output(park_name='Cabril_I_S', extension=False, repowering=False, substitution=True,
+#                      park_power_repowering=0,scenario_name='substitution', method_name='EF v3.1')
+#
+# ##CABRIL 2
+#
+# #Extension
+#
+# lci_repowering(extension_long=False, extension_short=True, substitution=False, repowering=False,
+#                    park_name_i='Cabril_II_SE', park_power_i=4, number_of_turbines_i=2,
+#                    park_location_i='PT',
+#                    park_coordinates_i=(40.98, -8.045),
+#                    manufacturer_i='Enercon',
+#                    rotor_diameter_i=70,
+#                    turbine_power_i=2, hub_height_i=64, commissioning_year_i=2005,
+#                    recycled_share_steel_i=None,
+#                    lifetime_i=19,
+#                    electricity_mix_steel_i=None,
+#                    generator_type_i='dd_eesg',
+#                    lifetime_extension=20, number_of_turbines_extension=2,
+#                    cf_extension=0.225, attrition_rate_extension=0.009
+#                    )
+#
+# lci_excel_output(park_name='Cabril_II_SE', extension=True, repowering=False, substitution=False,
+#                      park_power_repowering=0, scenario_name='extension', method_name='EF v3.1')
+#
+#
+#     # Substitution
+# lci_repowering(extension_long=False, extension_short=False, substitution=True, repowering=False,
+#                    park_name_i='Cabril_II_S', park_power_i=4, number_of_turbines_i=2,
+#                    park_location_i='PT',
+#                    park_coordinates_i=(40.98, -8.045),
+#                    manufacturer_i='Enercon',
+#                    rotor_diameter_i=70,
+#                    turbine_power_i=2, hub_height_i=64, commissioning_year_i=2005,
+#                    recycled_share_steel_i=None,
+#                    lifetime_i=19,
+#                    electricity_mix_steel_i=None,
+#                    generator_type_i='dd_eesg',
+#                    lifetime_substitution=25, number_of_turbines_substitution=2,
+#                    cf_substitution=0.225, attrition_rate_substitution=0.009
+#                    )
+#
+# lci_excel_output(park_name='Cabril_II_S', extension=False, repowering=False, substitution=True,
+#                      park_power_repowering=0,scenario_name='substitution', method_name='EF v3.1')
 
-lci_excel_output(park_name='SP100_Cabril_I_R', extension=False, repowering=True, substitution=False,
-                     park_power_repowering=18, scenario_name='repowering', method_name='EF v3.1')
+
+# ###CABRIL I --- RECYCLED CONTENT MAX
+#
+#
+# # repowering
+#
+lci_repowering(extension_long=False, extension_short=False, substitution=False, repowering=True,
+                   park_name_i='Cabril_I_SUBS', park_power_i=12.6, number_of_turbines_i=7,
+                   park_location_i='PT',
+                   park_coordinates_i=(40.98, -8.045),
+                   manufacturer_i='Enercon',
+                   rotor_diameter_i=66,
+                   turbine_power_i=1.8, hub_height_i=65, commissioning_year_i=2002,
+                   recycled_share_steel_i=1,
+                   lifetime_i=22,
+                   generator_type_i='dd_eesg',
+                   park_power_repowering=12.6,
+                   number_of_turbines_repowering=7,
+                   manufacturer_repowering='Enercon',
+                   rotor_diameter_repowering=66,
+                   turbine_power_repowering=1.8,
+                   hub_height_repowering=65,
+                   generator_type_repowering='dd_eesg',
+                   lifetime_repowering=25,
+                   cf_repowering=0.23,
+                   attrition_rate_repowering=0.009
+                   )
+
+lci_excel_output(park_name='Cabril_I_SUBS', extension=False, repowering=True, substitution=False,
+                     park_power_repowering=12.6, scenario_name='repowering', method_name='EF v3.1')
+
+lci_repowering(extension_long=False, extension_short=False, substitution=False, repowering=True,
+                   park_name_i='Cabril_II_SUBS', park_power_i=4, number_of_turbines_i=2,
+                   park_location_i='PT',
+                   park_coordinates_i=(40.98, -8.045),
+                   manufacturer_i='Enercon',
+                   rotor_diameter_i=70,
+                   turbine_power_i=1.8, hub_height_i=64, commissioning_year_i=2002,
+                   recycled_share_steel_i=1,
+                   lifetime_i=22,
+                   generator_type_i='dd_eesg',
+                   park_power_repowering=4,
+                   number_of_turbines_repowering=2,
+                   manufacturer_repowering='Enercon',
+                   rotor_diameter_repowering=70,
+                   turbine_power_repowering=1.8,
+                   hub_height_repowering=64,
+                   generator_type_repowering='dd_eesg',
+                   lifetime_repowering=25,
+                   cf_repowering=0.23,
+                   attrition_rate_repowering=0.009
+                   )
+
+lci_excel_output(park_name='Cabril_II_SUBS', extension=False, repowering=True, substitution=False,
+                     park_power_repowering=4, scenario_name='repowering', method_name='EF v3.1')
+###CABRIL II
+
+#  # repowering
+#
+# lci_repowering(extension_long=False, extension_short=False, substitution=False, repowering=True,
+#                    park_name_i='Cabril_II_R_S100_2', park_power_i=4, number_of_turbines_i=2,
+#                    park_location_i='PT',
+#                    park_coordinates_i=(40.98, -8.045),
+#                    manufacturer_i='Enercon',
+#                    rotor_diameter_i=70,
+#                    turbine_power_i=2, hub_height_i=64, commissioning_year_i=2005,
+#                    recycled_share_steel_i=1,
+#                    lifetime_i=20,
+#                    electricity_mix_steel_i='Norway',
+#                    generator_type_i='dd_eesg',
+#                    park_power_repowering=7.2,
+#                    number_of_turbines_repowering=1,
+#                    manufacturer_repowering='Vestas',
+#                    rotor_diameter_repowering=172,
+#                    turbine_power_repowering=7.2,
+#                    hub_height_repowering=114,
+#                    generator_type_repowering='dd_eesg',
+#                    lifetime_repowering=25,
+#                    cf_repowering=0.292,
+#                    attrition_rate_repowering=0.009
+#                    )
+#
+# lci_excel_output(park_name='Cabril_II_R_S100_2', extension=False, repowering=True, substitution=False,
+#                      park_power_repowering=7.2, scenario_name='repowering', method_name='EF v3.1')
+#
+# # extension
+#
+# lci_repowering(extension_long=False, extension_short=True, substitution=False, repowering=False,
+#                    park_name_i='Cabril_I_SE_S100_2', park_power_i=16.2, number_of_turbines_i=9,
+#                    park_location_i='PT',
+#                    park_coordinates_i=(40.98, -8.045),
+#                    manufacturer_i='Enercon',
+#                    rotor_diameter_i=66,
+#                    turbine_power_i=1.8, hub_height_i=65, commissioning_year_i=2002,
+#                    recycled_share_steel_i=1,
+#                    lifetime_i=22,
+#                    electricity_mix_steel_i='Norway',
+#                     recycled_share_steel_repowering=1,
+#                    generator_type_i='dd_eesg',
+#                    lifetime_extension=20, number_of_turbines_extension=9,
+#                    cf_extension=0.225, attrition_rate_extension=0.009
+#                    )
+#
+# lci_excel_output(park_name='Cabril_I_SE_S100_2', extension=True, repowering=False, substitution=False,
+#                      park_power_repowering=0, scenario_name='extension', method_name='EF v3.1')
+#
+#
+# # Substitution
+#
+# lci_repowering(extension_long=False, extension_short=False, substitution=True, repowering=False,
+#                    park_name_i='Cabril_I_S_S100_2', park_power_i=16.2, number_of_turbines_i=9,
+#                    park_location_i='PT',
+#                    park_coordinates_i=(40.98, -8.045),
+#                    manufacturer_i='Enercon',
+#                    rotor_diameter_i=66,
+#                    turbine_power_i=1.8, hub_height_i=65, commissioning_year_i=2002,
+#                    recycled_share_steel_i=1,
+#                    lifetime_i=22,
+#                    electricity_mix_steel_i='Norway',
+#                     recycled_share_steel_repowering=1,
+#                    generator_type_i='dd_eesg',
+#                    lifetime_substitution=25, number_of_turbines_substitution=9,
+#                    cf_substitution=0.225, attrition_rate_substitution=0.009
+#                    )
+#
+# lci_excel_output(park_name='Cabril_I_S_S100_2', extension=False, repowering=False, substitution=True,
+#                      park_power_repowering=0,scenario_name='substitution', method_name='EF v3.1')
+#
+# ##CABRIL 2
+#
+# #Extension
+#
+# lci_repowering(extension_long=False, extension_short=True, substitution=False, repowering=False,
+#                    park_name_i='Cabril_II_SE_S100_2', park_power_i=4, number_of_turbines_i=2,
+#                    park_location_i='PT',
+#                    park_coordinates_i=(40.98, -8.045),
+#                    manufacturer_i='Enercon',
+#                    rotor_diameter_i=70,
+#                    turbine_power_i=2, hub_height_i=64, commissioning_year_i=2005,
+#                    recycled_share_steel_i=1,
+#                    lifetime_i=19,
+#                    electricity_mix_steel_i='Norway',
+#                     recycled_share_steel_repowering=1,
+#                    generator_type_i='dd_eesg',
+#                    lifetime_extension=20, number_of_turbines_extension=2,
+#                    cf_extension=0.225, attrition_rate_extension=0.009
+#                    )
+#
+# lci_excel_output(park_name='Cabril_II_SE_S100_2', extension=True, repowering=False, substitution=False,
+#                      park_power_repowering=0, scenario_name='extension', method_name='EF v3.1')
+#
+#
+#     # Substitution
+# lci_repowering(extension_long=False, extension_short=False, substitution=True, repowering=False,
+#                    park_name_i='Cabril_II_S_S100_2', park_power_i=4, number_of_turbines_i=2,
+#                    park_location_i='PT',
+#                    park_coordinates_i=(40.98, -8.045),
+#                    manufacturer_i='Enercon',
+#                    rotor_diameter_i=70,
+#                    turbine_power_i=2, hub_height_i=64, commissioning_year_i=2005,
+#                    recycled_share_steel_i=1,
+#                    lifetime_i=19,
+#                    electricity_mix_steel_i='Norway',
+#                     recycled_share_steel_repowering=1,
+#                    generator_type_i='dd_eesg',
+#                    lifetime_substitution=25, number_of_turbines_substitution=2,
+#                    cf_substitution=0.225, attrition_rate_substitution=0.009
+#                    )
+#
+# lci_excel_output(park_name='Cabril_II_S_S100_2', extension=False, repowering=False, substitution=True,
+#                      park_power_repowering=0,scenario_name='substitution', method_name='EF v3.1')
+#
+#
+# ###CABRIL I --- RECYCLED CONTENT MIN
+#
+#
+# # repowering
+#
+# lci_repowering(extension_long=False, extension_short=False, substitution=False, repowering=True,
+#                    park_name_i='Cabril_I_R_S0_2', park_power_i=16.2, number_of_turbines_i=9,
+#                    park_location_i='PT',
+#                    park_coordinates_i=(40.98, -8.045),
+#                    manufacturer_i='Enercon',
+#                    rotor_diameter_i=66,
+#                    turbine_power_i=1.8, hub_height_i=65, commissioning_year_i=2002,
+#                    recycled_share_steel_i=0,
+#                    lifetime_i=22,
+#                    electricity_mix_steel_i='Poland',
+#                    generator_type_i='dd_eesg',
+#                    park_power_repowering=21.6,
+#                    number_of_turbines_repowering=3,
+#                    manufacturer_repowering='Vestas',
+#                    rotor_diameter_repowering=172,
+#                    turbine_power_repowering=7.2,
+#                    hub_height_repowering=114,
+#                    generator_type_repowering='dd_eesg',
+#                    electricity_mix_steel_repowering='Poland',
+#                     recycled_share_steel_repowering = 0 ,
+#                    lifetime_repowering=25,
+#                    cf_repowering=0.292,
+#                    attrition_rate_repowering=0.009
+#                    )
+#
+# lci_excel_output(park_name='Cabril_I_R_S0_2', extension=False, repowering=True, substitution=False,
+#                      park_power_repowering=21.6, scenario_name='repowering', method_name='EF v3.1')
+# ###CABRIL II
+#
+#  # repowering
+#
+# lci_repowering(extension_long=False, extension_short=False, substitution=False, repowering=True,
+#                    park_name_i='Cabril_II_R_S0_2', park_power_i=4, number_of_turbines_i=2,
+#                    park_location_i='PT',
+#                    park_coordinates_i=(40.98, -8.045),
+#                    manufacturer_i='Enercon',
+#                    rotor_diameter_i=70,
+#                    turbine_power_i=2, hub_height_i=64, commissioning_year_i=2005,
+#                    recycled_share_steel_i=0,
+#                    lifetime_i=20,
+#                    electricity_mix_steel_i='Poland',
+#                    generator_type_i='dd_eesg',
+#                    park_power_repowering=7.2,
+#                    number_of_turbines_repowering=1,
+#                    manufacturer_repowering='Vestas',
+#                    rotor_diameter_repowering=172,
+#                    turbine_power_repowering=7.2,
+#                    hub_height_repowering=114,
+#                    generator_type_repowering='dd_eesg',
+#                    electricity_mix_steel_repowering='Poland',
+#                     recycled_share_steel_repowering = 0 ,
+#                    lifetime_repowering=25,
+#                    cf_repowering=0.292,
+#                    attrition_rate_repowering=0.009
+#                    )
+#
+# lci_excel_output(park_name='Cabril_II_R_S0_2', extension=False, repowering=True, substitution=False,
+#                      park_power_repowering=7.2, scenario_name='repowering', method_name='EF v3.1')
+#
+# # extension
+#
+# lci_repowering(extension_long=False, extension_short=True, substitution=False, repowering=False,
+#                    park_name_i='Cabril_I_SE_S0_2', park_power_i=16.2, number_of_turbines_i=9,
+#                    park_location_i='PT',
+#                    park_coordinates_i=(40.98, -8.045),
+#                    manufacturer_i='Enercon',
+#                    rotor_diameter_i=66,
+#                    turbine_power_i=1.8, hub_height_i=65, commissioning_year_i=2002,
+#                    recycled_share_steel_i=0,
+#                    lifetime_i=22,
+#                    electricity_mix_steel_i='Poland',
+#                     recycled_share_steel_repowering = 0 ,
+#                    generator_type_i='dd_eesg',
+#                    lifetime_extension=20, number_of_turbines_extension=9,
+#                    cf_extension=0.225, attrition_rate_extension=0.009
+#                    )
+#
+# lci_excel_output(park_name='Cabril_I_SE_S0_2', extension=True, repowering=False, substitution=False,
+#                      park_power_repowering=0, scenario_name='extension', method_name='EF v3.1')
+#
+#
+# # Substitution
+#
+# lci_repowering(extension_long=False, extension_short=False, substitution=True, repowering=False,
+#                    park_name_i='Cabril_I_S_S0_2', park_power_i=16.2, number_of_turbines_i=9,
+#                    park_location_i='PT',
+#                    park_coordinates_i=(40.98, -8.045),
+#                    manufacturer_i='Enercon',
+#                    rotor_diameter_i=66,
+#                    turbine_power_i=1.8, hub_height_i=65, commissioning_year_i=2002,
+#                    recycled_share_steel_i=0,
+#                    lifetime_i=22,
+#                    electricity_mix_steel_i='Poland',
+#                     recycled_share_steel_repowering = 0 ,
+#                    generator_type_i='dd_eesg',
+#                    lifetime_substitution=25, number_of_turbines_substitution=9,
+#                    cf_substitution=0.225, attrition_rate_substitution=0.009
+#                    )
+#
+# lci_excel_output(park_name='Cabril_I_S_S0_2', extension=False, repowering=False, substitution=True,
+#                      park_power_repowering=0,scenario_name='substitution', method_name='EF v3.1')
+#
+# ##CABRIL 2
+#
+# #Extension
+#
+# lci_repowering(extension_long=False, extension_short=True, substitution=False, repowering=False,
+#                    park_name_i='Cabril_II_SE_S0_2', park_power_i=4, number_of_turbines_i=2,
+#                    park_location_i='PT',
+#                    park_coordinates_i=(40.98, -8.045),
+#                    manufacturer_i='Enercon',
+#                    rotor_diameter_i=70,
+#                    turbine_power_i=2, hub_height_i=64, commissioning_year_i=2005,
+#                    recycled_share_steel_i=0,
+#                    lifetime_i=19,
+#                    electricity_mix_steel_i='Poland',
+#                    generator_type_i='dd_eesg',
+#                    lifetime_extension=20, number_of_turbines_extension=2,
+#                    cf_extension=0.225, attrition_rate_extension=0.009
+#                    )
+#
+# lci_excel_output(park_name='Cabril_II_SE_S0_2', extension=True, repowering=False, substitution=False,
+#                      park_power_repowering=0, scenario_name='extension', method_name='EF v3.1')
+#
+#
+#     # Substitution
+# lci_repowering(extension_long=False, extension_short=False, substitution=True, repowering=False,
+#                    park_name_i='Cabril_II_S_S0_2', park_power_i=4, number_of_turbines_i=2,
+#                    park_location_i='PT',
+#                    park_coordinates_i=(40.98, -8.045),
+#                    manufacturer_i='Enercon',
+#                    rotor_diameter_i=70,
+#                    turbine_power_i=2, hub_height_i=64, commissioning_year_i=2005,
+#                    recycled_share_steel_i=0,
+#                    lifetime_i=19,
+#                    electricity_mix_steel_i='Poland',
+#                    generator_type_i='dd_eesg',
+#                    lifetime_substitution=25, number_of_turbines_substitution=2,
+#                    cf_substitution=0.225, attrition_rate_substitution=0.009
+#                    )
+#
+# lci_excel_output(park_name='Cabril_II_S_S0_2', extension=False, repowering=False, substitution=True,
+#                      park_power_repowering=0,scenario_name='substitution', method_name='EF v3.1')
+#
+#

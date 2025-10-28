@@ -15,11 +15,11 @@ import consts
 bd.projects.set_current(consts.PROJECT_NAME)
 bi.bw2setup()
 spold_files = consts.SPOLD_FILES
-if "cutoff391" not in bd.databases:
-    ei = bi.SingleOutputEcospold2Importer(spold_files, "cutoff391", use_mp=False)
+if "cutoff391reparajasi" not in bd.databases:
+    ei = bi.SingleOutputEcospold2Importer(spold_files, "cutoff391reparajasi", use_mp=False)
     ei.apply_strategies()
     ei.write_database()
-cutoff391 = bd.Database("cutoff391")
+cutoff391 = bd.Database("cutoff391reparajasi")
 if 'new_db' not in bd.databases:
     new_db = bd.Database('new_db')
     new_db.register()
