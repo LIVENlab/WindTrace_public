@@ -49,5 +49,5 @@ The repository has a Jupyter Notebook with a step-by-step guide on how to use Wi
 
 If you use WindTrace for academic work please cite:
 
-Sierra‐Montoya, Miquel, et al. "WindTrace: Assessing the environmental impacts of wind energy designs with a parametric life cycle inventory model." Journal of Industrial Ecology (2025). https://doi.org/10.1111/jiec.70114
+Sierra‐Montoya, M., Muñoz‐Liesa, J., Pérez‐Sánchez, L. À., de Tomás‐Pascual, A., & Madrid‐López, C. (2025). WindTrace: Assessing the environmental impacts of wind energy designs with a parametric life cycle inventory model. Journal of Industrial Ecology. https://doi.org/10.1111/jiec.70114
 
